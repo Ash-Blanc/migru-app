@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, sunset, nord, abyss;
+}
+
+@layer base {
+  body {
+    min-height: max(884px, 100dvh);
+    font-family: 'Manrope', sans-serif;
+    @apply bg-base-300 text-base-content;
+  }
+  
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.15); opacity: 0.6; }
+  }
+  
+  @keyframes ripple {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  
+  .animate-breathe {
+    animation: breathe 8s infinite ease-in-out;
+  }
+  
+  .animate-ripple {
+    animation: ripple 8s infinite ease-out;
+  }
+  
+  .animate-ripple-delayed {
+    animation: ripple 8s infinite ease-out;
+    animation-delay: 2s;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-base-100/60 backdrop-blur-xl border border-white/10 shadow-sm;
+  }
+}
