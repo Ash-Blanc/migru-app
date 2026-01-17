@@ -1,38 +1,83 @@
-# sv
+# Migru App 🧠
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+**Migru** is a modern, intelligent migraine tracking and relief application. It combines a sleek SvelteKit frontend with a powerful AI agent backend (powered by Agno and Hume EVI) to help users forecast risks, log attacks, and find active relief.
 
-## Creating a project
+![Migru App](https://via.placeholder.com/800x400?text=Migru+App+Preview)
 
-If you're seeing this, you've probably already done this step. Congrats!
+## ✨ Features
 
-```sh
-# create a new project in the current directory
-npx sv create
+-   **🔍 Forecast:** Personalized migraine risk prediction.
+-   **📝 Log:** Easy logging of migraine attacks, symptoms, and severity.
+-   **🛡️ Active Relief:** Guidance and tools to manage ongoing attacks.
+-   **🤖 AI Companion:** Voice-enabled and intelligent agent interactions using **Hume EVI** and **Agno**.
+-   **📱 PWA Ready:** Installable on mobile devices for quick access.
 
-# create a new project in my-app
-npx sv create my-app
-```
+## 🛠️ Tech Stack
 
-## Developing
+### Frontend
+-   **Framework:** [SvelteKit](https://kit.svelte.dev/) (Svelte 5)
+-   **Styling:** [TailwindCSS v4](https://tailwindcss.com/) & [DaisyUI](https://daisyui.com/)
+-   **Language:** TypeScript
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### Backend
+-   **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python)
+-   **AI/Agent:** [Agno](https://github.com/agno-agi/agno) & [Hume AI](https://hume.ai/)
+-   **Server:** Uvicorn
 
-```sh
+## 🚀 Getting Started
+
+### Prerequisites
+-   Node.js (v20+)
+-   Python (v3.10+)
+
+### 1. Frontend Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Start the development server
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+The frontend will be available at `http://localhost:5173`.
 
-To create a production version of your app:
+### 2. Backend Setup
 
-```sh
-npm run build
+```bash
+# Navigate to the backend directory
+cd backend
+
+# Create a virtual environment (optional but recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies (ensure you have a requirements.txt, or install manually for now)
+pip install fastapi uvicorn agno pydantic
+
+# Start the server
+python -m app.main
 ```
 
-You can preview the production build with `npm run preview`.
+The backend API will be available at `http://localhost:8000`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## 📂 Project Structure
+
+```
+migru-app/
+├── backend/            # Python FastAPI backend
+│   └── app/            # Application logic (agents, tools, main)
+├── src/                # SvelteKit source code
+│   ├── lib/            # Shared components and stores
+│   └── routes/         # Application pages (forecast, log, etc.)
+├── static/             # Static assets (manifest, icons)
+└── ...config files
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+## 📄 License
+
+[MIT](LICENSE)
