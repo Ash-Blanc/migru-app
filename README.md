@@ -26,37 +26,57 @@
 
 ## 🚀 Getting Started
 
+
+
 ### Prerequisites
--   Node.js (v20+)
--   Python (v3.10+)
+
+- [Bun](https://bun.sh/) (Fast all-in-one JavaScript runtime)
+
+- [uv](https://github.com/astral-sh/uv) (Extremely fast Python package installer and resolver)
+
+
 
 ### 1. Frontend Setup
 
+
+
 ```bash
+
 # Install dependencies
-npm install
+
+bun install
+
+
 
 # Start the development server
-npm run dev
+
+bun run dev
+
 ```
+
+
 
 The frontend will be available at `http://localhost:5173`.
 
+
+
 ### 2. Backend Setup
 
+
+
 ```bash
-# Create a virtual environment (optional but recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install fastapi uvicorn agno pydantic
+# uv will automatically manage the virtual environment and dependencies
 
-# Start the server (from the project root)
-python -m src.backend.app.main
+uv run python -m src.backend.app.main
+
 ```
 
+
+
 The backend API will be available at `http://localhost:8000`.
+
+
 
 ## 📂 Project Structure
 
