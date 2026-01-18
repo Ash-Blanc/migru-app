@@ -1,3 +1,4 @@
+<script lang="ts">
   import { page } from '$app/stores';
   import { Home, PlusCircle, ShieldAlert, Settings, Sparkles, Mic } from 'lucide-svelte';
   import { agentState, humeClient, isAgentOpen } from '$lib/stores';
