@@ -1,105 +1,92 @@
 <script lang="ts">
-  import { agentState, agentMessage, humeClient } from '$lib/stores';
-  import { Mic, MicOff, Loader2, Radio } from 'lucide-svelte';
+  import { agentState, agentMessage, humeClient, isAgentOpen } from '$lib/stores';
+  import { Mic, Loader2, X, Sparkles } from 'lucide-svelte';
   import { clsx } from 'clsx';
   import { fade, fly } from 'svelte/transition';
-
-  let isOpen = false;
-
-  function toggleAgent() {
-    if ($agentState === 'disconnected') {
-      humeClient.connect();
-      isOpen = true;
-    } else {
-      // If already connected, just toggle visibility or mute?
-      // For now, let's treat the button as a "Summon/Dismiss"
-      // But we probably want a separate "disconnect"
-      // humeClient.disconnect();
-      // isOpen = false;
-      isOpen = !isOpen;
-    }
-  }
 
   function handleMicClick() {
     humeClient.toggleListening();
   }
 </script>
 
-<!-- Floating Action Button / Status Indicator -->
-<div class="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-4 pointer-events-none">
-  
-  {#if isOpen && $agentState !== 'disconnected'}
-    <!-- Chat Bubble / Agent Interface -->
+<!-- Voice Agent Panel (No floating trigger, now controlled by BottomNav) -->
+
+{#if $isAgentOpen && $agentState !== 'disconnected'}
+  <!-- Chat Interface Overlay (Fixed at bottom, above nav) -->
+  <div 
+    class="fixed bottom-24 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none"
+  >
     <div 
-      transition:fly={{ y: 20, duration: 300 }}
-      class="pointer-events-auto bg-base-100 shadow-xl rounded-2xl w-80 p-4 border border-base-200"
+      transition:fly={{ y: 20, duration: 400 }}
+      class="pointer-events-auto w-full max-w-sm"
     >
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center gap-2">
-            <div class={clsx("w-2 h-2 rounded-full animate-pulse", {
-                "bg-red-500": $agentState === 'listening',
-                "bg-blue-500": $agentState === 'processing',
-                "bg-green-500": $agentState === 'speaking',
-                "bg-gray-400": $agentState === 'idle'
-            })}></div>
-            <span class="text-sm font-semibold opacity-70">
-                {#if $agentState === 'listening'} Listening...
-                {:else if $agentState === 'processing'} Thinking...
-                {:else if $agentState === 'speaking'} Speaking...
-                {:else} Ready
-                {/if}
-            </span>
-        </div>
-        <button on:click={() => isOpen = false} class="btn btn-ghost btn-xs btn-circle">✕</button>
-      </div>
+      <div class="relative rounded-3xl glass-ethereal overflow-hidden border border-primary/10 shadow-2xl">
+        <div class="p-5">
+          <!-- Header -->
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2">
+              <div class={clsx(
+                "w-2 h-2 rounded-full transition-colors duration-300",
+                {
+                  "bg-error animate-pulse": $agentState === 'listening',
+                  "bg-blue-500 animate-pulse": $agentState === 'processing',
+                  "bg-success": $agentState === 'speaking',
+                  "bg-base-content/30": $agentState === 'idle'
+                }
+              )}></div>
+              <span class="text-xs font-medium opacity-60">
+                {#if $agentState === 'listening'}Listening...
+                {:else if $agentState === 'processing'}Thinking...
+                {:else if $agentState === 'speaking'}Speaking...
+                {:else}Ready{/if}
+              </span>
+            </div>
+            <button 
+              on:click={() => $isAgentOpen = false} 
+              class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100"
+            >
+              <X size={14} />
+            </button>
+          </div>
 
-      <!-- Agent Output -->
-      <div class="min-h-[60px] max-h-[150px] overflow-y-auto mb-4 text-sm">
-        {#if $agentMessage}
-          <p class="leading-relaxed">{$agentMessage}</p>
-        {:else}
-          <p class="opacity-50 italic">Waiting for connection...</p>
-        {/if}
-      </div>
-
-      <!-- Controls -->
-      <div class="flex justify-center">
-        <button 
-            on:click={handleMicClick}
-            class={clsx("btn btn-circle btn-lg transition-all duration-300", {
-                "btn-error shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-110": $agentState === 'listening',
-                "btn-primary": $agentState !== 'listening'
-            })}
-        >
-            {#if $agentState === 'processing'}
-                <Loader2 class="w-8 h-8 animate-spin" />
-            {:else if $agentState === 'listening'}
-                <Mic class="w-8 h-8" />
+          <!-- Agent Output -->
+          <div class="min-h-[48px] max-h-[120px] overflow-y-auto mb-5">
+            {#if $agentMessage}
+              <p class="text-sm leading-relaxed" in:fade={{ duration: 200 }}>
+                {$agentMessage}
+              </p>
             {:else}
-                <Mic class="w-8 h-8" />
+              <div class="flex items-center gap-2 text-xs opacity-40">
+                <Sparkles size={12} />
+                <span class="italic">Ask about your migraines...</span>
+              </div>
             {/if}
-        </button>
+          </div>
+
+          <!-- Mic Button (Main Interaction) -->
+          <div class="flex justify-center">
+            <button 
+              on:click={handleMicClick}
+              class={clsx(
+                "relative btn btn-circle btn-lg border-0 transition-all duration-300",
+                $agentState === 'listening'
+                  ? "bg-error text-white shadow-lg shadow-error/40 scale-110" 
+                  : "bg-gradient-to-br from-primary to-secondary text-primary-content shadow-lg shadow-primary/30"
+              )}
+            >
+              {#if $agentState === 'listening'}
+                <span class="absolute inset-0 rounded-full bg-error/30 animate-ping"></span>
+              {/if}
+              
+              {#if $agentState === 'processing'}
+                <Loader2 class="w-6 h-6 animate-spin" />
+              {:else}
+                <Mic class="w-6 h-6 relative z-10" />
+              {/if}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  {/if}
-
-  <!-- Trigger Button -->
-  <button 
-    on:click={toggleAgent}
-    class={clsx("pointer-events-auto btn btn-circle btn-lg shadow-lg transition-transform hover:scale-105", {
-        "btn-neutral": $agentState === 'disconnected',
-        "btn-primary": $agentState !== 'disconnected'
-    })}
-  >
-    {#if $agentState === 'disconnected'}
-        <Radio class="w-6 h-6" />
-    {:else}
-        <!-- Pulse effect when connected but closed -->
-        <span class="absolute inline-flex h-full w-full rounded-full bg-primary opacity-20 animate-ping"></span>
-        <div class="relative w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-white font-bold">
-            M
-        </div>
-    {/if}
-  </button>
-</div>
+  </div>
+{/if}
