@@ -1,24 +1,55 @@
 <script lang="ts">
-  export let icon: string;
-  export let title: string;
-  export let description: string;
-  export let onClick: () => void = () => {};
+  import { riskLevel, hrv } from '$lib/stores';
+  import { CloudRain, TrendingDown, Activity } from 'lucide-svelte';
+  import { clsx } from 'clsx';
 </script>
 
-<button 
-  class="card card-side bg-base-200 shadow-sm hover:shadow-md transition-all duration-300 w-full mb-4 text-left group"
-  on:click={onClick}
->
-  <figure class="pl-4 py-4 flex-none">
-    <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-content transition-colors duration-300">
-      <span class="material-symbols-outlined text-2xl">{icon}</span>
+<div class="card bg-base-100 shadow-xl border border-base-200">
+  <div class="card-body p-5">
+    <div class="flex justify-between items-start">
+      <div>
+        <h2 class="card-title text-sm opacity-70 uppercase tracking-wide">Migraine Risk</h2>
+        <div class={clsx("text-4xl font-black mt-1", {
+            "text-success": $riskLevel === 'Low',
+            "text-warning": $riskLevel === 'Moderate',
+            "text-error": $riskLevel === 'High'
+        })}>
+            {$riskLevel}
+        </div>
+      </div>
+      <div class={clsx("p-3 rounded-full bg-opacity-10", {
+            "bg-success text-success": $riskLevel === 'Low',
+            "bg-warning text-warning": $riskLevel === 'Moderate',
+            "bg-error text-error": $riskLevel === 'High'
+      })}>
+        <TrendingDown size={24} />
+      </div>
     </div>
-  </figure>
-  <div class="card-body p-4 gap-1">
-    <h3 class="card-title text-base font-bold">{title}</h3>
-    <p class="text-sm opacity-70 leading-snug">{description}</p>
+
+    <div class="divider my-2"></div>
+
+    <div class="grid grid-cols-2 gap-4">
+        <!-- Weather/Barometer -->
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-50 p-2 rounded-lg text-blue-500">
+                <CloudRain size={20} />
+            </div>
+            <div>
+                <div class="text-xs opacity-60">Pressure</div>
+                <div class="font-semibold text-sm">Falling</div>
+            </div>
+        </div>
+
+        <!-- HRV -->
+        <div class="flex items-center gap-3">
+            <div class="bg-purple-50 p-2 rounded-lg text-purple-500">
+                <Activity size={20} />
+            </div>
+            <div>
+                <div class="text-xs opacity-60">HRV</div>
+                <div class="font-semibold text-sm">{$hrv}ms</div>
+            </div>
+        </div>
+    </div>
   </div>
-  <div class="pr-4 py-4 flex items-center flex-none">
-    <span class="material-symbols-outlined opacity-50 group-hover:translate-x-1 transition-transform">chevron_right</span>
-  </div>
-</button>
+</div>

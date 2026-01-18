@@ -1,108 +1,61 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { addLog, updateStatus } from '$lib/stores';
-
+  import { fade } from 'svelte/transition';
+  
   let severity = 5;
-  let selectedSymptoms: string[] = [];
-  let notes = '';
+  let symptoms = [];
+  const allSymptoms = ["Nausea", "Aura", "Light Sensitivity", "Sound Sensitivity", "Dizziness", "Throbbing"];
 
-  const symptomsList = [
-    'Throbbing', 'Nausea', 'Light Sensitivity', 'Sound Sensitivity', 
-    'Aura', 'Dizziness', 'Neck Pain', 'Fatigue'
-  ];
-
-  function toggleSymptom(symptom: string) {
-    if (selectedSymptoms.includes(symptom)) {
-      selectedSymptoms = selectedSymptoms.filter(s => s !== symptom);
+  function toggleSymptom(s: string) {
+    if (symptoms.includes(s)) {
+      symptoms = symptoms.filter(i => i !== s);
     } else {
-      selectedSymptoms = [...selectedSymptoms, symptom];
+      symptoms = [...symptoms, s];
     }
   }
 
-  function handleSave() {
-    addLog({
-      type: 'attack',
-      severity,
-      symptoms: selectedSymptoms,
-      notes
-    });
-    
-    // Automatically update status if severity is high
-    if (severity > 3) {
-      updateStatus('Attack');
-    }
-
-    goto('/');
+  function saveLog() {
+    // In a real app, post to backend
+    alert("Log saved! (Mock)");
   }
 </script>
 
-<div class="max-w-md mx-auto px-4 py-8 min-h-screen flex flex-col">
-  <header class="flex items-center gap-4 mb-8">
-    <button on:click={() => history.back()} class="btn btn-circle btn-ghost">
-      <span class="material-symbols-outlined">arrow_back</span>
-    </button>
-    <h1 class="text-2xl font-bold">Log Attack</h1>
-  </header>
+<div class="space-y-6" in:fade>
+  <h1 class="text-2xl font-bold">Log an Event</h1>
 
-  <div class="flex-1 space-y-8">
-    <!-- Severity Slider -->
-    <div class="form-control w-full">
-      <label class="label" for="severity-range">
-        <span class="label-text font-bold text-lg">Severity (1-10)</span>
+  <!-- Severity Slider -->
+  <div class="card bg-base-100 border border-base-200 p-4">
+    <label class="label">
+        <span class="label-text font-bold">Pain Severity</span>
         <span class="label-text-alt text-xl font-bold text-primary">{severity}</span>
-      </label>
-      <input 
-        id="severity-range"
-        type="range" 
-        min="1" 
-        max="10" 
-        bind:value={severity} 
-        class="range range-primary" 
-        step="1" 
-      />
-      <div class="w-full flex justify-between text-xs px-2 mt-2 opacity-50">
+    </label>
+    <input type="range" min="0" max="10" bind:value={severity} class="range range-primary range-sm" step="1" />
+    <div class="w-full flex justify-between text-xs px-2 mt-2 opacity-50">
+        <span>None</span>
         <span>Mild</span>
-        <span>Moderate</span>
         <span>Severe</span>
-      </div>
+        <span>Extreme</span>
     </div>
+  </div>
 
-    <!-- Symptoms -->
-    <div>
-      <h3 class="font-bold text-lg mb-4">Symptoms</h3>
-      <div class="flex flex-wrap gap-2">
-        {#each symptomsList as symptom}
-          <button 
-            class="btn btn-sm rounded-full {selectedSymptoms.includes(symptom) ? 'btn-primary' : 'btn-outline'}"
-            on:click={() => toggleSymptom(symptom)}
-          >
-            {symptom}
-            {#if selectedSymptoms.includes(symptom)}
-              <span class="material-symbols-outlined text-sm">check</span>
-            {/if}
-          </button>
+  <!-- Symptoms -->
+  <div>
+    <h3 class="font-bold mb-3">Symptoms</h3>
+    <div class="flex flex-wrap gap-2">
+        {#each allSymptoms as symptom}
+            <button 
+                class="btn btn-sm rounded-full {symptoms.includes(symptom) ? 'btn-primary' : 'btn-outline border-base-300'}"
+                on:click={() => toggleSymptom(symptom)}
+            >
+                {symptom}
+            </button>
         {/each}
-      </div>
-    </div>
-
-    <!-- Notes -->
-    <div class="form-control">
-      <label class="label" for="notes">
-        <span class="label-text font-bold text-lg">Notes</span>
-      </label>
-      <textarea 
-        id="notes"
-        class="textarea textarea-bordered h-24" 
-        placeholder="Any triggers or specific details..."
-        bind:value={notes}
-      ></textarea>
     </div>
   </div>
 
-  <div class="mt-8 pb-8">
-    <button class="btn btn-primary w-full btn-lg rounded-2xl shadow-lg" on:click={handleSave}>
-      <span class="material-symbols-outlined">save</span>
-      Save Log
-    </button>
-  </div>
+  <!-- Notes -->
+  <textarea class="textarea textarea-bordered w-full h-24" placeholder="Add notes (e.g., missed meal, stress)..."></textarea>
+
+  <button class="btn btn-primary w-full shadow-lg" on:click={saveLog}>
+    Save Entry
+  </button>
 </div>

@@ -1,6 +1,6 @@
 from agno.agent import Agent
 from agno.models.google import Gemini
-from backend.app.tools import get_forecast, log_attack, get_status, update_status
+from backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
 import os
 
 # You would typically load the API key from environment variables
@@ -20,6 +20,6 @@ def get_migru_agent():
             "When a user reports pain, be empathetic first, then ask for details to log it.",
             "Use the provided tools to fetch data or perform actions."
         ],
-        tools=[get_forecast, log_attack, get_status, update_status],
+        tools=[get_forecast, log_attack, get_status, update_status, get_recent_logs],
         markdown=True
     )

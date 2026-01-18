@@ -1,21 +1,22 @@
 <script lang="ts">
+  import { Home, PlusCircle, ShieldAlert, Settings } from 'lucide-svelte';
   import { page } from '$app/stores';
-  
-  const navItems = [
-    { href: '/', icon: 'home', label: 'Home' },
-    { href: '/active-relief', icon: 'self_care', label: 'Relief' },
-    { href: '/forecast', icon: 'insights', label: 'Forecast' }
-  ];
+  import { clsx } from 'clsx';
 </script>
 
-<div class="dock dock-md fixed bottom-0 left-0 right-0 w-full z-50 md:hidden">
-  {#each navItems as item}
-    <a
-      href={item.href}
-      class="{($page.url.pathname === item.href) ? 'dock-active' : ''}"
-    >
-      <span class="material-symbols-outlined text-xl">{item.icon}</span>
-      <span class="dock-label text-xs">{item.label}</span>
-    </a>
-  {/each}
+<div class="btm-nav btm-nav-lg bg-base-100 border-t border-base-200 z-40 pb-safe">
+  <a href="/" class={clsx({ "active text-primary": $page.url.pathname === '/' })}>
+    <Home size={24} />
+    <span class="btm-nav-label text-xs">Forecast</span>
+  </a>
+  
+  <a href="/log" class={clsx({ "active text-primary": $page.url.pathname.includes('/log') })}>
+    <PlusCircle size={24} />
+    <span class="btm-nav-label text-xs">Log</span>
+  </a>
+
+  <a href="/active-relief" class={clsx({ "active text-primary": $page.url.pathname.includes('/active-relief') })}>
+    <ShieldAlert size={24} />
+    <span class="btm-nav-label text-xs">Relief</span>
+  </a>
 </div>

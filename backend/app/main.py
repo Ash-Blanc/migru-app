@@ -2,10 +2,22 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Any
 from backend.app.agent import get_migru_agent
-from backend.app.tools import get_forecast, log_attack, get_status, update_status
+from backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
 import inspect
+import os
+from fastapi.middleware.cors import CORSMiddleware
+import httpx
 
 app = FastAPI(title="Migru Agent Backend")
+
+# Allow CORS for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For dev only
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 agent = get_migru_agent()
 
@@ -20,6 +32,32 @@ class ToolCallRequest(BaseModel):
 @app.get("/")
 def health_check():
     return {"status": "ok", "service": "Migru Agent Backend"}
+
+@app.get("/hume/auth")
+async def hume_auth():
+    """
+    Generates a Hume Access Token using the API Key and Secret Key from env.
+    """
+    HUME_API_KEY = os.getenv("HUME_API_KEY")
+    HUME_SECRET_KEY = os.getenv("HUME_SECRET_KEY")
+    
+    if not HUME_API_KEY or not HUME_SECRET_KEY:
+        # Fallback/Mock for demo if keys aren't present
+        return {"access_token": "mock_token_for_demo_purposes", "note": "Set HUME_API_KEY/SECRET env vars for real token"}
+
+    # Request a token from Hume API
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://api.hume.ai/oauth2-cc/token",
+            auth=(HUME_API_KEY, HUME_SECRET_KEY),
+            data={"grant_type": "client_credentials"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise HTTPException(status_code=response.status_code, detail="Failed to fetch Hume token")
 
 @app.post("/agent/chat")
 def chat(message: str):
@@ -39,7 +77,8 @@ def handle_hume_tool_call(request: ToolCallRequest):
         "get_forecast": get_forecast,
         "log_attack": log_attack,
         "get_status": get_status,
-        "update_status": update_status
+        "update_status": update_status,
+        "get_recent_logs": get_recent_logs
     }
     
     if request.tool_name not in tool_map:

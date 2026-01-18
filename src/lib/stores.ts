@@ -1,121 +1,51 @@
 import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
 
-// --- Types ---
+// --- App State ---
+export const userStatus = writable("Balanced"); // Balanced, Prodromal, Attack, Postdromal
+export const riskLevel = writable("Moderate");
+export const hrv = writable(65);
 
-export type StatusType = 'Balanced' | 'Prodromal' | 'Attack' | 'Postdromal';
+// --- Voice Agent State ---
+export type AgentState = "disconnected" | "connecting" | "idle" | "listening" | "processing" | "speaking" | "error";
 
-export interface LogEntry {
-  id: string;
-  date: string;
-  type: 'attack' | 'relief' | 'checkin';
-  severity?: number; // 1-10
-  symptoms?: string[];
-  notes?: string;
+export const agentState = writable<AgentState>("disconnected");
+export const agentMessage = writable<string | null>(null); // Last message from agent
+export const userTranscript = writable<string | null>(null); // Real-time user transcript
+
+// --- Mock Hume Client (simulating the SDK) ---
+class MockHumeClient {
+    async connect() {
+        agentState.set("connecting");
+        setTimeout(() => {
+            agentState.set("idle");
+            agentMessage.set("Hello! I'm Migru. How are you feeling today?");
+        }, 1500);
+    }
+
+    async disconnect() {
+        agentState.set("disconnected");
+        agentMessage.set(null);
+    }
+
+    async toggleListening() {
+        // In a real app, this would toggle the microphone
+        agentState.update(s => {
+            if (s === "idle") return "listening";
+            if (s === "listening") {
+                // Simulate processing
+                setTimeout(() => {
+                    agentState.set("processing");
+                    setTimeout(() => {
+                        agentState.set("speaking");
+                        agentMessage.set("I understand. I've logged that for you. Is there anything else?");
+                        setTimeout(() => agentState.set("idle"), 3000);
+                    }, 1000);
+                }, 1000);
+                return "processing"; // Immediate transition to processing simulation
+            }
+            return s;
+        });
+    }
 }
 
-export interface AppState {
-  status: {
-    current: StatusType;
-    hrv: string; // e.g. "45ms"
-    lastCheck: string; // ISO date
-  };
-  forecast: {
-    riskLevel: 'Low' | 'Moderate' | 'High';
-    pressureTrend: 'Rising' | 'Steady' | 'Falling';
-    humidity: number;
-  };
-  logs: LogEntry[];
-}
-
-export interface UserSettings {
-  theme: string;
-  notifications: {
-    hydration: boolean;
-    barometer: boolean;
-    sleep: boolean;
-  };
-  profile: {
-    name: string;
-    email: string;
-  };
-}
-
-// --- Helpers ---
-
-function createPersistedStore<T>(key: string, startValue: T) {
-  const saved = browser ? localStorage.getItem(key) : null;
-  const initial = saved ? JSON.parse(saved) : startValue;
-  const store = writable<T>(initial);
-
-  if (browser) {
-    store.subscribe(value => {
-      localStorage.setItem(key, JSON.stringify(value));
-    });
-  }
-  return store;
-}
-
-export const themes = ['light', 'dark', 'sunset', 'nord', 'abyss'];
-
-// --- Settings Store ---
-
-const defaultSettings: UserSettings = {
-  theme: 'light',
-  notifications: {
-    hydration: true,
-    barometer: true,
-    sleep: false
-  },
-  profile: {
-    name: 'Sarah',
-    email: 'sarah@example.com'
-  }
-};
-
-export const settings = createPersistedStore<UserSettings>('migru-settings', defaultSettings);
-
-// Settings side-effects (theme application)
-if (browser) {
-  settings.subscribe((value) => {
-    document.documentElement.setAttribute('data-theme', value.theme);
-  });
-}
-
-// --- App State Store ---
-
-const defaultAppState: AppState = {
-  status: {
-    current: 'Balanced',
-    hrv: '65ms',
-    lastCheck: new Date().toISOString()
-  },
-  forecast: {
-    riskLevel: 'Moderate',
-    pressureTrend: 'Falling',
-    humidity: 45
-  },
-  logs: []
-};
-
-export const appState = createPersistedStore<AppState>('migru-app-state', defaultAppState);
-
-// --- Actions ---
-
-export function addLog(entry: Omit<LogEntry, 'id' | 'date'>) {
-  appState.update(state => {
-    const newEntry: LogEntry = {
-      ...entry,
-      id: crypto.randomUUID(),
-      date: new Date().toISOString()
-    };
-    return { ...state, logs: [newEntry, ...state.logs] };
-  });
-}
-
-export function updateStatus(status: StatusType) {
-  appState.update(state => ({
-    ...state,
-    status: { ...state.status, current: status, lastCheck: new Date().toISOString() }
-  }));
-}
+export const humeClient = new MockHumeClient();
