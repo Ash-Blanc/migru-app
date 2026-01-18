@@ -4,6 +4,7 @@
     import SideNav from "$lib/components/SideNav.svelte";
     import TopAppBar from "$lib/components/TopAppBar.svelte";
     import VoiceAgent from "$lib/components/VoiceAgent.svelte";
+    import Toast from "$lib/components/Toast.svelte";
 </script>
 
 <div class="min-h-screen flex flex-col lg:flex-row font-sans text-base-content selection:bg-primary/30 selection:text-primary-content">
@@ -24,6 +25,7 @@
     </div>
 
     <VoiceAgent />
+    <Toast />
     
     <!-- Mobile/Tablet Bottom Nav (hidden on lg screens) -->
     <div class="lg:hidden">

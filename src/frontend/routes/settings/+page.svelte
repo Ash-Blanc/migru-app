@@ -1,11 +1,12 @@
 <script lang="ts">
   import { slide, fly, fade } from 'svelte/transition';
   import { get } from 'svelte/store';
-  import { apiKeys, userTheme, notificationsEnabled } from '$lib/stores';
+  import { apiKeys, userTheme, notificationsEnabled, showToast } from '$lib/stores';
   import { Key, Bell, LogOut, ChevronRight, Palette, Check } from 'lucide-svelte';
   import { clsx } from 'clsx';
   
   let showApiKeys = false;
+  let isSavingKeys = false;
 
   // Local bindings for inputs
   let humeKey = get(apiKeys.humeKey);
@@ -14,13 +15,20 @@
   let geminiKey = get(apiKeys.geminiKey);
   let mistralKey = get(apiKeys.mistralKey);
 
-  function saveKeys() {
+  async function saveKeys() {
+    isSavingKeys = true;
+    // Simulate save delay
+    await new Promise(r => setTimeout(r, 600));
+
     apiKeys.humeKey.set(humeKey);
     apiKeys.humeSecret.set(humeSecret);
     apiKeys.humeConfigId.set(humeConfigId);
     apiKeys.geminiKey.set(geminiKey);
     apiKeys.mistralKey.set(mistralKey);
-    alert("Keys Saved.");
+    
+    showToast("API Configuration saved", "success");
+    isSavingKeys = false;
+    showApiKeys = false;
   }
 </script>
 
@@ -158,11 +166,17 @@
         </div>
 
         <button 
-          class="btn btn-primary w-full rounded-xl h-11 font-semibold gap-2" 
+          class={clsx(
+            "btn btn-primary w-full rounded-xl h-11 font-semibold gap-2 transition-all",
+            isSavingKeys && "loading opacity-80"
+          )}
           on:click={saveKeys}
+          disabled={isSavingKeys}
         >
-          <Check size={16} />
-          Save Keys
+          {#if !isSavingKeys}
+            <Check size={16} />
+          {/if}
+          {isSavingKeys ? 'Saving...' : 'Save Keys'}
         </button>
       </div>
     {/if}

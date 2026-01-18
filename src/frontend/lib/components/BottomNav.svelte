@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { agentState, humeClient, isAgentOpen } from '$lib/stores';
   import { clsx } from 'clsx';
+  import { scale } from 'svelte/transition';
 
   function handleVoiceClick() {
     if ($agentState === 'disconnected') {
@@ -31,7 +32,7 @@
       )}
     >
       {#if $page.url.pathname === '/'}
-        <div class="absolute -top-1 w-1 rounded-full bg-primary h-1"></div>
+        <div class="absolute -top-1 w-1 rounded-full bg-primary h-1" transition:scale={{ duration: 200 }}></div>
       {/if}
       <Home size={22} strokeWidth={$page.url.pathname === '/' ? 2.5 : 2} />
       <span class={clsx("text-[10px]", $page.url.pathname === '/' && "font-semibold")}>Home</span>
@@ -45,7 +46,7 @@
       )}
     >
       {#if $page.url.pathname === '/log'}
-        <div class="absolute -top-1 w-1 rounded-full bg-primary h-1"></div>
+        <div class="absolute -top-1 w-1 rounded-full bg-primary h-1" transition:scale={{ duration: 200 }}></div>
       {/if}
       <PlusCircle size={22} strokeWidth={$page.url.pathname === '/log' ? 2.5 : 2} />
       <span class={clsx("text-[10px]", $page.url.pathname === '/log' && "font-semibold")}>Log</span>
@@ -98,7 +99,7 @@
       )}
     >
       {#if $page.url.pathname === '/active-relief'}
-        <div class="absolute -top-1 w-1 rounded-full bg-primary h-1"></div>
+        <div class="absolute -top-1 w-1 rounded-full bg-primary h-1" transition:scale={{ duration: 200 }}></div>
       {/if}
       <ShieldAlert size={22} strokeWidth={$page.url.pathname === '/active-relief' ? 2.5 : 2} />
       <span class={clsx("text-[10px]", $page.url.pathname === '/active-relief' && "font-semibold")}>Relief</span>
@@ -112,7 +113,7 @@
       )}
     >
       {#if $page.url.pathname === '/settings'}
-        <div class="absolute -top-1 w-1 rounded-full bg-primary h-1"></div>
+        <div class="absolute -top-1 w-1 rounded-full bg-primary h-1" transition:scale={{ duration: 200 }}></div>
       {/if}
       <Settings size={22} strokeWidth={$page.url.pathname === '/settings' ? 2.5 : 2} />
       <span class={clsx("text-[10px]", $page.url.pathname === '/settings' && "font-semibold")}>Settings</span>

@@ -2,7 +2,7 @@
   import { fly, scale, fade } from 'svelte/transition';
   import { clsx } from 'clsx';
   import { Activity, Moon, Utensils, Zap, Droplets, Check } from 'lucide-svelte';
-  import { logs, userStatus, riskLevel, hrv } from '$lib/stores';
+  import { logs, userStatus, riskLevel, hrv, showToast } from '$lib/stores';
   import { goto } from '$app/navigation';
   
   let severity = 5;
@@ -10,6 +10,7 @@
   let triggers: string[] = [];
   let showAllSymptoms = false;
   let notes = '';
+  let isSaving = false;
   
   // Symptom options with neutral emojis
   const primarySymptoms = [
@@ -49,7 +50,13 @@
     }
   }
 
-  function saveLog() {
+  async function saveLog() {
+    if (isSaving) return;
+    isSaving = true;
+
+    // Simulate network delay for better UX
+    await new Promise(r => setTimeout(r, 800));
+
     const newEntry = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
@@ -75,7 +82,8 @@
       hrv.update(n => Math.min(100, n + 2));
     }
 
-    alert("Entry saved. Adjusting your forecast...");
+    showToast("Entry saved. Forecast updated.", "success");
+    isSaving = false;
     goto('/');
   }
   
@@ -210,7 +218,7 @@
       Possible triggers
     </h3>
     
-    <div class="grid grid-cols-2 gap-2">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {#each commonTriggers as trigger, i}
         <button 
           class={clsx(
@@ -243,12 +251,18 @@
   <!-- Save Button (Contrast: elevated style) -->
   <div in:fly={{ y: 20, duration: 500, delay: 500 }}>
     <button 
-      class="btn btn-primary w-full font-semibold shadow-2xl shadow-primary/40 hover:shadow-primary/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 gap-2 ring-2 ring-primary/20"
+      class={clsx(
+        "btn btn-primary w-full font-semibold shadow-2xl shadow-primary/40 hover:shadow-primary/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 gap-2 ring-2 ring-primary/20",
+        isSaving && "loading opacity-80"
+      )}
       style="height: 3.5rem; border-radius: var(--radius-lg); font-size: var(--text-body);"
       on:click={saveLog}
+      disabled={isSaving}
     >
-      <Check size={18} />
-      Save Entry
+      {#if !isSaving}
+        <Check size={18} />
+      {/if}
+      {isSaving ? 'Saving...' : 'Save Entry'}
     </button>
     <p class="text-center opacity-40 mt-3" style="font-size: var(--text-tiny);">
       Logs help track patterns over time

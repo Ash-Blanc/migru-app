@@ -104,6 +104,22 @@ export const apiKeys = {
     mistralKey: createPersistentStore('migru_mistral_key', '')
 };
 
+// --- Toast Notifications ---
+export interface ToastNotification {
+    message: string;
+    type: 'success' | 'error' | 'info';
+    id?: string;
+}
+
+export const toastStore = writable<ToastNotification | null>(null);
+
+export const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    toastStore.set({ message, type, id: crypto.randomUUID() });
+    setTimeout(() => {
+        toastStore.update(t => (t && t.message === message ? null : t));
+    }, 3000);
+};
+
 // --- Hume EVI Client (SDK v0.1.x) ---
 class HumeEVIClient {
     private client: VoiceClient | null = null;
