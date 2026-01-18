@@ -1,6 +1,6 @@
 from agno.agent import Agent
 from agno.models.google import Gemini
-from backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
+from src.backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
 import os
 
 # You would typically load the API key from environment variables

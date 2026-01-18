@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Any
-from backend.app.agent import get_migru_agent
-from backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
+from src.backend.app.agent import get_migru_agent
+from src.backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
 import inspect
 import os
 from fastapi.middleware.cors import CORSMiddleware

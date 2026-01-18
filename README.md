@@ -45,18 +45,15 @@ The frontend will be available at `http://localhost:5173`.
 ### 2. Backend Setup
 
 ```bash
-# Navigate to the backend directory
-cd backend
-
 # Create a virtual environment (optional but recommended)
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies (ensure you have a requirements.txt, or install manually for now)
+# Install dependencies
 pip install fastapi uvicorn agno pydantic
 
-# Start the server
-python -m app.main
+# Start the server (from the project root)
+python -m src.backend.app.main
 ```
 
 The backend API will be available at `http://localhost:8000`.
@@ -65,12 +62,12 @@ The backend API will be available at `http://localhost:8000`.
 
 ```
 migru-app/
-├── backend/            # Python FastAPI backend
-│   └── app/            # Application logic (agents, tools, main)
-├── src/                # SvelteKit source code
-│   ├── lib/            # Shared components and stores
-│   └── routes/         # Application pages (forecast, log, etc.)
-├── static/             # Static assets (manifest, icons)
+├── src/
+│   ├── backend/        # Python FastAPI backend
+│   │   └── app/        # Application logic (agents, tools, main)
+│   └── frontend/       # SvelteKit source code
+│       ├── lib/        # Shared components and stores
+│       └── routes/     # Application pages (forecast, log, etc.)
 └── ...config files
 ```
 
