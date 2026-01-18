@@ -9,8 +9,10 @@
 -   **🔍 Forecast:** Personalized migraine risk prediction.
 -   **📝 Log:** Easy logging of migraine attacks, symptoms, and severity.
 -   **🛡️ Active Relief:** Guidance and tools to manage ongoing attacks.
--   **🤖 AI Companion:** Voice-enabled and intelligent agent interactions using **Hume EVI** and **Agno**.
--   **📱 PWA Ready:** Installable on mobile devices for quick access.
+- **🤖 AI Companion:** Voice-enabled and intelligent agent interactions using **Hume EVI** and **Agno**.
+- **🔑 Custom API Keys:** Configure your own Hume, Gemini, or Mistral keys directly in the app settings for full control.
+- **📱 PWA Ready:** Installable on mobile devices for quick access.
+
 
 ## 🛠️ Tech Stack
 
@@ -78,7 +80,79 @@ The backend API will be available at `http://localhost:8000`.
 
 
 
-## 📂 Project Structure
+
+
+
+
+## ⚙️ Configuration
+
+
+
+
+
+
+
+Migru allows you to use your own API keys for AI features. You can configure these in two ways:
+
+
+
+
+
+
+
+1.  **In-App Settings (Recommended for Users):** Navigate to the Settings page in the app and enter your keys. They will be saved in your browser's local storage and sent with every request.
+
+
+
+2.  **Environment Variables (Recommended for Developers):** Create a `.env` file in the project root or set the following variables in your environment:
+
+
+
+
+
+
+
+```bash
+
+
+
+# Hume AI (for Voice EVI)
+
+
+
+HUME_API_KEY=your_api_key
+
+
+
+HUME_SECRET_KEY=your_secret_key
+
+
+
+
+
+
+
+# LLM Providers (for the Agno Agent)
+
+
+
+GOOGLE_API_KEY=your_gemini_key
+
+
+
+# OR
+
+
+
+MISTRAL_API_KEY=your_mistral_key
+
+
+
+```
+
+
+
+
 
 ```
 migru-app/
