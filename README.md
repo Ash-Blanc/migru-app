@@ -167,7 +167,7 @@ migru-app/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+Contributions are welcome! Check out our [Contribution Guide](CONTRIBUTING.md) to get started. Please open an issue or submit a pull request.
 
 ## 📄 License
 
