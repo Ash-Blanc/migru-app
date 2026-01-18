@@ -1,19 +1,31 @@
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import Header, Optional, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Any
 from src.backend.app.agent import get_migru_agent
 from src.backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
-import inspect
+from agno.os import AgentOS
 import os
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 
-app = FastAPI(title="Migru Agent Backend")
+# 1. Initialize the Migru Agent
+migru_agent = get_migru_agent()
 
-# Allow CORS for frontend
+# 2. Create the AgentOS instance
+# This automatically creates a FastAPI app with agentic endpoints
+agent_os = AgentOS(
+    id="migru-os",
+    name="Migru Agent OS",
+    agents=[migru_agent],
+)
+
+# 3. Get the FastAPI app from AgentOS
+app = agent_os.get_app()
+
+# Allow CORS for frontend (AgentOS might already handle this, but we'll be explicit)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For dev only
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -25,11 +37,7 @@ class ToolCallRequest(BaseModel):
     tool_name: str
     arguments: dict
 
-# --- Routes ---
-
-@app.get("/")
-def health_check():
-    return {"status": "ok", "service": "Migru Agent Backend"}
+# --- Custom Routes (Hume Integration) ---
 
 @app.get("/hume/auth")
 async def hume_auth(
@@ -44,10 +52,8 @@ async def hume_auth(
     HUME_SECRET_KEY = x_hume_secret_key or os.getenv("HUME_SECRET_KEY")
     
     if not HUME_API_KEY or not HUME_SECRET_KEY:
-        # Fallback/Mock for demo if keys aren't present
         return {"access_token": "mock_token_for_demo_purposes", "note": "Set HUME_API_KEY/SECRET in Settings or env vars"}
 
-    # Request a token from Hume API
     async with httpx.AsyncClient() as client:
         response = await client.post(
             "https://api.hume.ai/oauth2-cc/token",
@@ -68,12 +74,10 @@ def chat(
     x_mistral_api_key: Optional[str] = Header(None)
 ):
     """
-    Direct chat endpoint for testing the Agno agent logic.
+    Direct chat endpoint for testing.
     Dynamically instantiates the agent based on provided keys.
     """
-    # Create agent instance per request to handle different keys
     agent = get_migru_agent(gemini_key=x_gemini_api_key, mistral_key=x_mistral_api_key)
-    
     response = agent.run(message)
     return {"response": response.content}
 
@@ -81,7 +85,6 @@ def chat(
 def handle_hume_tool_call(request: ToolCallRequest):
     """
     Generic webhook to handle tool calls coming from Hume EVI.
-    Hume will send the tool name and arguments here.
     """
     tool_map = {
         "get_forecast": get_forecast,
@@ -97,11 +100,8 @@ def handle_hume_tool_call(request: ToolCallRequest):
     func = tool_map[request.tool_name]
     
     try:
-        # Call the function with unpacked arguments
         result = func(**request.arguments)
         return {"result": result}
-    except TypeError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid arguments for {request.tool_name}: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -109,11 +109,7 @@ def handle_hume_tool_call(request: ToolCallRequest):
 def get_hume_tool_definitions():
     """
     Returns the JSON schemas for the tools to configure Hume EVI.
-    This helper generates the config needed for the frontend/Hume setup.
     """
-    # Helper to generate Hume-compatible tool definitions from Python functions
-    # (Simplified for this prototype)
-    
     tools = [
         {
             "type": "function",
@@ -138,6 +134,12 @@ def get_hume_tool_definitions():
             "name": "log_attack",
             "parameters": "{\"type\": \"object\", \"properties\": {\"severity\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 10}, \"symptoms\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"notes\": {\"type\": \"string\"}}, \"required\": [\"severity\", \"symptoms\"]}",
             "description": "Log a migraine attack with severity and symptoms."
+        },
+        {
+            "type": "function",
+            "name": "get_recent_logs",
+            "parameters": "{\"type\": \"object\", \"properties\": {\"limit\": {\"type\": \"integer\"}}}",
+            "description": "Get the most recent health logs."
         }
     ]
     return tools

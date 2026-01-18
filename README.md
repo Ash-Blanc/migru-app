@@ -23,7 +23,7 @@
 
 ### Backend
 -   **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python)
--   **AI/Agent:** [Agno](https://github.com/agno-agi/agno) & [Hume AI](https://hume.ai/)
+-   **AI/Agent:** [Agno](https://github.com/agno-agi/agno) (powered by **AgentOS**) & [Hume AI](https://hume.ai/)
 -   **Server:** Uvicorn
 
 ## 🚀 Getting Started
