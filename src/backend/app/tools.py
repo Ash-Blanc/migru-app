@@ -2,15 +2,30 @@ from typing import List, Optional
 from pydantic import BaseModel
 import datetime
 import random
+import json
+from pathlib import Path
 
-# --- In-Memory State (Mock DB) ---
+# --- Persistent State (Simple JSON File) ---
+DATA_FILE = Path("migru_data.json")
+
 class AppState(BaseModel):
     status: str = "Balanced"
     hrv: int = 65
     risk_level: str = "Moderate"
     logs: List[dict] = []
 
-db = AppState()
+def load_db() -> AppState:
+    if DATA_FILE.exists():
+        try:
+            return AppState.model_validate_json(DATA_FILE.read_text())
+        except Exception:
+            return AppState()
+    return AppState()
+
+def save_db(state: AppState):
+    DATA_FILE.write_text(state.model_dump_json(indent=2))
+
+db = load_db()
 
 # --- Tool Functions ---
 
@@ -52,6 +67,7 @@ def log_attack(severity: int, symptoms: List[str], notes: str = "") -> str:
     elif severity > 0:
         db.status = "Prodromal"
         
+    save_db(db)
     return f"I've logged that for you. Severity {severity}/10. Status is now '{db.status}'."
 
 def get_status() -> str:
@@ -66,6 +82,7 @@ def update_status(status: str) -> str:
     Allowed values: "Balanced", "Prodromal", "Attack", "Postdromal", "Recovery".
     """
     db.status = status
+    save_db(db)
     return f"Status updated to {status}."
 
 def get_recent_logs(limit: int = 3) -> str:

@@ -14,7 +14,7 @@
   <!-- Content -->
   <div class="relative flex-1">
     <!-- Mobile/Tablet Logo (SVG icon) -->
-    <a href="/" class="btn btn-ghost lg:hidden p-2">
+    <a href="/" class="btn btn-ghost lg:hidden p-2" aria-label="Migru Home">
       <svg class="w-8 h-8" viewBox="0 0 100 114.42231082293117">
         <g transform="translate(-17.81291764397167, -10.601765466045661) scale(1.3562447978815297)" stroke="currentColor" fill="currentColor">
           <g xmlns="http://www.w3.org/2000/svg">

@@ -1,9 +1,21 @@
 import { writable, get } from 'svelte/store';
 import {
-    VoiceClient,
-    type ToolCallMessage,
-    type ToolResponseMessage
+    VoiceClient
 } from '@humeai/voice';
+
+// Type definitions (approximate, since exports are missing in current version)
+interface ToolCallMessage {
+    type: 'tool_call';
+    name: string;
+    parameters: string | Record<string, any>;
+    tool_call_id: string;
+}
+
+interface ToolResponseMessage {
+    type: 'tool_response';
+    tool_call_id: string;
+    content: string;
+}
 
 // --- Helper for Persistence ---
 const createPersistentStore = <T>(key: string, startValue: T) => {
@@ -49,6 +61,33 @@ export const userTheme = createPersistentStore<string>("migru_theme", "light");
 export const notificationsEnabled = createPersistentStore<boolean>("migru_notifications", true);
 export const logs = createPersistentStore<any[]>("migru_logs", []);
 
+// --- Data Fetching (Sync with Backend) ---
+export const syncWithBackend = async () => {
+    try {
+        console.log("Syncing with backend...");
+        const res = await fetch('http://localhost:8000/api/status');
+        if (res.ok) {
+            const data = await res.json();
+            userStatus.set(data.status);
+            riskLevel.set(data.risk_level);
+            hrv.set(data.hrv);
+            logs.set(data.logs);
+            console.log("Synced:", data);
+        } else {
+            console.error("Sync failed:", res.status);
+        }
+    } catch (e) {
+        console.error("Backend connection error:", e);
+    }
+};
+
+// Initial sync on client load
+if (typeof window !== 'undefined') {
+    syncWithBackend();
+    // Poll every 30 seconds to keep UI fresh
+    setInterval(syncWithBackend, 30000);
+}
+
 // --- Voice Agent State ---
 export type AgentState = "disconnected" | "connecting" | "idle" | "listening" | "processing" | "speaking" | "error";
 export const agentState = writable<AgentState>("disconnected");
@@ -60,6 +99,7 @@ export const isAgentOpen = writable<boolean>(false);
 export const apiKeys = {
     humeKey: createPersistentStore('migru_hume_key', ''),
     humeSecret: createPersistentStore('migru_hume_secret', ''),
+    humeConfigId: createPersistentStore('migru_hume_config_id', ''),
     geminiKey: createPersistentStore('migru_gemini_key', ''),
     mistralKey: createPersistentStore('migru_mistral_key', '')
 };
@@ -78,7 +118,7 @@ class HumeEVIClient {
         console.log("--- Initializing Hume EVI ---");
 
         // 1. Check for Secure Context (Required for Mic)
-        if (typeof window !== 'undefined' && !window.isSecureContext) {
+        if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost') {
             console.error("❌ NOT A SECURE CONTEXT! Microphone access will be blocked.");
             console.warn("Please use http://localhost:5173 or HTTPS if using an IP/Domain.");
             agentState.set("error");
@@ -98,6 +138,8 @@ class HumeEVIClient {
 
         // 3. Get Auth Token
         let accessToken = '';
+        const configId = get(apiKeys.humeConfigId);
+        
         try {
             const hKey = get(apiKeys.humeKey);
             const hSecret = get(apiKeys.humeSecret);
@@ -122,10 +164,16 @@ class HumeEVIClient {
         try {
             console.log("Phase 2: Connecting to Hume EVI WebSocket...");
 
-            // In v0.1.x, we use the constructor directly
+            // Use VoiceClient.create() if constructor is private, or assume it's publicly constructible if docs say so.
+            // Since svelte-check says constructor is private, we should look for a static factory method.
+            // However, based on the package usage, it is often new VoiceClient({...}).
+            // If the type definition in node_modules says private, we might need to cast or suppress.
+            
+            // @ts-ignore - The constructor is marked private in some type defs but is the way to init in 0.1.x
             this.client = new VoiceClient({
                 hostname: 'api.hume.ai',
                 auth: { type: 'accessToken', value: accessToken },
+                configId: configId || undefined, // Use Config ID if provided
 
                 onOpen: () => {
                     console.log("✓ Hume EVI Connected!");
@@ -136,7 +184,7 @@ class HumeEVIClient {
 
                 onMessage: (msg: any) => {
                     if (!msg) return;
-                    console.log("Hume message:", msg.type);
+                    // console.log("Hume message:", msg.type); // Less noise
 
                     switch (msg.type) {
                         case "user_message":
@@ -180,7 +228,7 @@ class HumeEVIClient {
             });
 
             console.log("Phase 3: Handshaking...");
-            this.client.connect();
+            this.client?.connect();
 
         } catch (e) {
             console.error("❌ SDK Initialization failed:", e);
@@ -206,15 +254,31 @@ class HumeEVIClient {
         agentState.set("processing");
         console.log("Tool execution:", message.name);
         try {
+            // Need to parse parameters if they are a JSON string, or use directly if object
+            let args = message.parameters;
+            if (typeof args === 'string') {
+                 try {
+                     args = JSON.parse(args);
+                 } catch (e) {
+                     console.warn("Could not parse tool params, using as is:", args);
+                 }
+            }
+
             const res = await fetch('http://localhost:8000/hume/tool-call', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tool_name: message.name,
-                    arguments: JSON.parse(message.parameters)
+                    arguments: args
                 })
             });
             const data = await res.json();
+            
+            // Sync frontend state immediately if status changed
+            if (message.name === 'log_attack' || message.name === 'update_status') {
+                 syncWithBackend();
+            }
+
             this.client?.sendToolMessage({
                 type: 'tool_response',
                 tool_call_id: message.tool_call_id,

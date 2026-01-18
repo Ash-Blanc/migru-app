@@ -67,16 +67,16 @@
       <div class="relative mb-8 mt-2">
         <!-- Aura Blob (Closure: incomplete boundary) -->
         <div class={clsx(
-          "absolute inset-0 rounded-full blur-3xl opacity-40 animate-pulse-soft transition-colors duration-700",
+          "absolute inset-0 rounded-full blur-3xl opacity-40 animate-pulse-soft transition-colors duration-700 orb-aura",
           auraColor
         )}></div>
         
         <!-- Main orb (Symmetry: perfect circle) -->
         <div class={clsx(
-          "relative w-36 h-36 sm:w-40 sm:h-40 rounded-full flex items-center justify-center transition-all duration-700 shadow-2xl",
+          "relative w-36 h-36 sm:w-40 sm:h-40 rounded-full flex items-center justify-center transition-all duration-700 orb-glow",
           "bg-gradient-to-br",
           orbGradient
-        )} style="box-shadow: var(--shadow-2xl);">
+        )}>
            <!-- Subtle inner highlight for depth -->
            <div class="absolute inset-0 rounded-full bg-gradient-to-t from-black/10 to-white/20"></div>
            

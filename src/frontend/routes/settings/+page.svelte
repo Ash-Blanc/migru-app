@@ -10,12 +10,14 @@
   // Local bindings for inputs
   let humeKey = get(apiKeys.humeKey);
   let humeSecret = get(apiKeys.humeSecret);
+  let humeConfigId = get(apiKeys.humeConfigId);
   let geminiKey = get(apiKeys.geminiKey);
   let mistralKey = get(apiKeys.mistralKey);
 
   function saveKeys() {
     apiKeys.humeKey.set(humeKey);
     apiKeys.humeSecret.set(humeSecret);
+    apiKeys.humeConfigId.set(humeConfigId);
     apiKeys.geminiKey.set(geminiKey);
     apiKeys.mistralKey.set(mistralKey);
     alert("Keys Saved.");
@@ -130,6 +132,12 @@
             placeholder="Secret Key" 
             class="input input-sm h-10 bg-base-content/5 border-0 w-full rounded-xl" 
             bind:value={humeSecret} 
+          />
+          <input 
+            type="text" 
+            placeholder="Config ID (Optional)" 
+            class="input input-sm h-10 bg-base-content/5 border-0 w-full rounded-xl" 
+            bind:value={humeConfigId} 
           />
         </div>
 

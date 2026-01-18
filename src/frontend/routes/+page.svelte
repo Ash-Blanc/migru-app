@@ -61,12 +61,12 @@
 
   <!-- Daily Tip Card (White Space: 48px separation) -->
   <div 
-    class="relative overflow-hidden glass-ethereal"
+    class="relative overflow-hidden glass-panel card-interactive"
     style="border-radius: var(--radius-lg); padding: var(--space-lg);"
     in:fly={{ y: 20, duration: 500, delay: 300 }}
   >
     <div class="flex items-start gap-3">
-      <div class="text-2xl">{dailyTip.emoji}</div>
+      <div class="text-2xl animate-float">{dailyTip.emoji}</div>
       <div>
         <p class="text-primary uppercase tracking-wider mb-1" style="font-size: var(--text-tiny); font-weight: var(--weight-semibold);">Today's note</p>
         <p class="opacity-80" style="font-size: var(--text-small); line-height: 1.625;">{dailyTip.text}</p>
@@ -92,7 +92,7 @@
       {#if hasLogs}
         {#each recentLogs as log, i}
           <div 
-            class="group w-full flex items-center gap-3 glass-ethereal transition-all duration-300 hover:bg-base-100/20 text-left"
+            class="group w-full flex items-center gap-3 glass-panel card-interactive text-left"
             style="padding: var(--space-md); border-radius: var(--radius-lg);"
             in:fly={{ y: 15, duration: 400, delay: 450 + i * 50 }}
           >

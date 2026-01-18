@@ -2,7 +2,7 @@ from fastapi import Header, HTTPException, APIRouter
 from pydantic import BaseModel
 from typing import Optional
 from app.os import agent_os, get_migru_agent
-from app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
+from app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs, db
 import os
 import httpx
 from fastapi.middleware.cors import CORSMiddleware
@@ -120,6 +120,18 @@ def get_hume_tool_definitions():
         }
     ]
     return tools
+
+@app.get("/api/status")
+def get_current_status():
+    """
+    Returns the current status, risk level, and logs for the frontend.
+    """
+    return {
+        "status": db.status,
+        "hrv": db.hrv,
+        "risk_level": db.risk_level,
+        "logs": db.logs
+    }
 
 # Mount custom routers
 app.include_router(hume_router)
