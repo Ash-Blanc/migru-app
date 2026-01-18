@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from typing import List, Optional, Any
 from src.backend.app.agent import get_migru_agent
@@ -19,8 +19,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-agent = get_migru_agent()
-
 # --- Request Models ---
 
 class ToolCallRequest(BaseModel):
@@ -34,16 +32,20 @@ def health_check():
     return {"status": "ok", "service": "Migru Agent Backend"}
 
 @app.get("/hume/auth")
-async def hume_auth():
+async def hume_auth(
+    x_hume_api_key: Optional[str] = Header(None), 
+    x_hume_secret_key: Optional[str] = Header(None)
+):
     """
-    Generates a Hume Access Token using the API Key and Secret Key from env.
+    Generates a Hume Access Token.
+    Prioritizes headers, then environment variables.
     """
-    HUME_API_KEY = os.getenv("HUME_API_KEY")
-    HUME_SECRET_KEY = os.getenv("HUME_SECRET_KEY")
+    HUME_API_KEY = x_hume_api_key or os.getenv("HUME_API_KEY")
+    HUME_SECRET_KEY = x_hume_secret_key or os.getenv("HUME_SECRET_KEY")
     
     if not HUME_API_KEY or not HUME_SECRET_KEY:
         # Fallback/Mock for demo if keys aren't present
-        return {"access_token": "mock_token_for_demo_purposes", "note": "Set HUME_API_KEY/SECRET env vars for real token"}
+        return {"access_token": "mock_token_for_demo_purposes", "note": "Set HUME_API_KEY/SECRET in Settings or env vars"}
 
     # Request a token from Hume API
     async with httpx.AsyncClient() as client:
@@ -60,10 +62,18 @@ async def hume_auth():
         raise HTTPException(status_code=response.status_code, detail="Failed to fetch Hume token")
 
 @app.post("/agent/chat")
-def chat(message: str):
+def chat(
+    message: str, 
+    x_gemini_api_key: Optional[str] = Header(None),
+    x_mistral_api_key: Optional[str] = Header(None)
+):
     """
     Direct chat endpoint for testing the Agno agent logic.
+    Dynamically instantiates the agent based on provided keys.
     """
+    # Create agent instance per request to handle different keys
+    agent = get_migru_agent(gemini_key=x_gemini_api_key, mistral_key=x_mistral_api_key)
+    
     response = agent.run(message)
     return {"response": response.content}
 

@@ -12,6 +12,31 @@ export const agentState = writable<AgentState>("disconnected");
 export const agentMessage = writable<string | null>(null); // Last message from agent
 export const userTranscript = writable<string | null>(null); // Real-time user transcript
 
+// --- API Keys ---
+// Helper to persist to localStorage
+const createPersistentStore = (key: string, startValue: string) => {
+    const { subscribe, set, update } = writable(startValue);
+    
+    if (typeof localStorage !== 'undefined') {
+        const storedValue = localStorage.getItem(key);
+        if (storedValue) {
+            set(storedValue);
+        }
+        subscribe(current => {
+            localStorage.setItem(key, current);
+        });
+    }
+
+    return { subscribe, set, update };
+};
+
+export const apiKeys = {
+    humeKey: createPersistentStore('migru_hume_key', ''),
+    humeSecret: createPersistentStore('migru_hume_secret', ''),
+    geminiKey: createPersistentStore('migru_gemini_key', ''),
+    mistralKey: createPersistentStore('migru_mistral_key', '')
+};
+
 // --- Mock Hume Client (simulating the SDK) ---
 class MockHumeClient {
     async connect() {

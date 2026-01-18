@@ -1,12 +1,61 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
+  import { apiKeys } from '$lib/stores';
   
   let notificationsEnabled = true;
   let theme = "light";
+
+  // Local bindings for inputs
+  let humeKey = $apiKeys.humeKey;
+  let humeSecret = $apiKeys.humeSecret;
+  let geminiKey = $apiKeys.geminiKey;
+  let mistralKey = $apiKeys.mistralKey;
+
+  function saveSettings() {
+    apiKeys.humeKey.set(humeKey);
+    apiKeys.humeSecret.set(humeSecret);
+    apiKeys.geminiKey.set(geminiKey);
+    apiKeys.mistralKey.set(mistralKey);
+    alert("Settings Saved!");
+  }
 </script>
 
 <div class="space-y-6" in:fade>
   <h1 class="text-2xl font-bold">Settings</h1>
+
+  <!-- API Keys Section -->
+  <div class="card bg-base-100 border border-base-200 shadow-sm">
+    <div class="card-body">
+        <h2 class="card-title text-base">API Configuration</h2>
+        <p class="text-xs opacity-60 mb-2">Set your own API keys to power the agent.</p>
+
+        <div class="form-control w-full">
+            <label class="label"><span class="label-text">Hume API Key</span></label>
+            <input type="password" placeholder="Key..." class="input input-bordered w-full input-sm" bind:value={humeKey} />
+        </div>
+
+        <div class="form-control w-full">
+            <label class="label"><span class="label-text">Hume Secret Key</span></label>
+            <input type="password" placeholder="Secret..." class="input input-bordered w-full input-sm" bind:value={humeSecret} />
+        </div>
+
+        <div class="divider">LLM Provider</div>
+
+        <div class="form-control w-full">
+            <label class="label"><span class="label-text">Gemini API Key</span></label>
+            <input type="password" placeholder="AIza..." class="input input-bordered w-full input-sm" bind:value={geminiKey} />
+        </div>
+
+        <div class="form-control w-full">
+            <label class="label"><span class="label-text">Mistral API Key</span></label>
+            <input type="password" placeholder="Key..." class="input input-bordered w-full input-sm" bind:value={mistralKey} />
+        </div>
+
+        <div class="mt-4 flex justify-end">
+            <button class="btn btn-primary btn-sm" on:click={saveSettings}>Save API Keys</button>
+        </div>
+    </div>
+  </div>
 
   <div class="card bg-base-100 border border-base-200 shadow-sm">
     <div class="card-body">

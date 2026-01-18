@@ -1,18 +1,29 @@
 from agno.agent import Agent
 from agno.models.google import Gemini
+from agno.models.mistral import Mistral
 from src.backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
 import os
 
-# You would typically load the API key from environment variables
-# os.environ["GOOGLE_API_KEY"] = "..."
-
-def get_migru_agent():
+def get_migru_agent(gemini_key: str = None, mistral_key: str = None):
     """
     Returns an Agno Agent configured for the Migru health assistant.
+    Supports dynamic API key injection.
     """
+    model = None
+    
+    # Priority: Mistral Key -> Gemini Key -> Env Vars
+    if mistral_key:
+        model = Mistral(id="mistral-large-latest", api_key=mistral_key)
+    elif gemini_key:
+        model = Gemini(id="gemini-2.0-flash-exp", api_key=gemini_key)
+    else:
+        # Fallback to default (env vars handled by library or default config)
+        # Defaulting to Gemini for this prototype
+        model = Gemini(id="gemini-2.0-flash-exp")
+
     return Agent(
         name="Migru Voice Agent",
-        model=Gemini(id="gemini-2.0-flash-exp"),
+        model=model,
         instructions=[
             "You are Migru, an empathetic AI assistant for migraine management.",
             "Your goal is to help the user track their health, provide forecasts, and log attacks via voice.",
