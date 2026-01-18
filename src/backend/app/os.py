@@ -1,8 +1,8 @@
 from agno.agent import Agent
 from agno.models.google import Gemini
 from agno.models.mistral import MistralChat
+from agno.os import AgentOS
 from app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
-import os
 
 def get_migru_agent(gemini_key: str = None, mistral_key: str = None):
     """
@@ -34,3 +34,16 @@ def get_migru_agent(gemini_key: str = None, mistral_key: str = None):
         tools=[get_forecast, log_attack, get_status, update_status, get_recent_logs],
         markdown=True
     )
+
+# Initialize the default agent (can be overridden per request in custom endpoints if needed)
+# For AgentOS standard endpoints, this default instance is used.
+migru_agent = get_migru_agent()
+
+# Create the AgentOS instance
+agent_os = AgentOS(
+    id="migru-os",
+    name="Migru Agent OS",
+    description="Backend OS for Migru App",
+    agents=[migru_agent],
+    # You can add teams, workflows, knowledge, etc. here
+)

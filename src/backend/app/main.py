@@ -1,28 +1,17 @@
-from fastapi import Header, Optional, HTTPException
+from fastapi import Header, HTTPException, APIRouter
 from pydantic import BaseModel
-from typing import List, Optional, Any
-from src.backend.app.agent import get_migru_agent
-from src.backend.app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
-from agno.os import AgentOS
+from typing import Optional
+from app.os import agent_os, get_migru_agent
+from app.tools import get_forecast, log_attack, get_status, update_status, get_recent_logs
 import os
-from fastapi.middleware.cors import CORSMiddleware
 import httpx
+from fastapi.middleware.cors import CORSMiddleware
 
-# 1. Initialize the Migru Agent
-migru_agent = get_migru_agent()
-
-# 2. Create the AgentOS instance
-# This automatically creates a FastAPI app with agentic endpoints
-agent_os = AgentOS(
-    id="migru-os",
-    name="Migru Agent OS",
-    agents=[migru_agent],
-)
-
-# 3. Get the FastAPI app from AgentOS
+# Get the FastAPI app from AgentOS
 app = agent_os.get_app()
 
-# Allow CORS for frontend (AgentOS might already handle this, but we'll be explicit)
+# Allow CORS for frontend
+# AgentOS might set this, but we ensure it's open for dev
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,7 +28,9 @@ class ToolCallRequest(BaseModel):
 
 # --- Custom Routes (Hume Integration) ---
 
-@app.get("/hume/auth")
+hume_router = APIRouter(prefix="/hume", tags=["Hume"])
+
+@hume_router.get("/auth")
 async def hume_auth(
     x_hume_api_key: Optional[str] = Header(None), 
     x_hume_secret_key: Optional[str] = Header(None)
@@ -67,21 +58,7 @@ async def hume_auth(
     else:
         raise HTTPException(status_code=response.status_code, detail="Failed to fetch Hume token")
 
-@app.post("/agent/chat")
-def chat(
-    message: str, 
-    x_gemini_api_key: Optional[str] = Header(None),
-    x_mistral_api_key: Optional[str] = Header(None)
-):
-    """
-    Direct chat endpoint for testing.
-    Dynamically instantiates the agent based on provided keys.
-    """
-    agent = get_migru_agent(gemini_key=x_gemini_api_key, mistral_key=x_mistral_api_key)
-    response = agent.run(message)
-    return {"response": response.content}
-
-@app.post("/hume/tool-call")
+@hume_router.post("/tool-call")
 def handle_hume_tool_call(request: ToolCallRequest):
     """
     Generic webhook to handle tool calls coming from Hume EVI.
@@ -105,7 +82,7 @@ def handle_hume_tool_call(request: ToolCallRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/hume/tools")
+@hume_router.get("/tools")
 def get_hume_tool_definitions():
     """
     Returns the JSON schemas for the tools to configure Hume EVI.
@@ -143,6 +120,24 @@ def get_hume_tool_definitions():
         }
     ]
     return tools
+
+# Mount custom routers
+app.include_router(hume_router)
+
+# --- Dynamic Agent Route (for non-AgentOS chat testing if needed) ---
+@app.post("/agent/chat", tags=["Agent"])
+def chat(
+    message: str, 
+    x_gemini_api_key: Optional[str] = Header(None),
+    x_mistral_api_key: Optional[str] = Header(None)
+):
+    """
+    Direct chat endpoint for testing.
+    Dynamically instantiates the agent based on provided keys.
+    """
+    agent = get_migru_agent(gemini_key=x_gemini_api_key, mistral_key=x_mistral_api_key)
+    response = agent.run(message)
+    return {"response": response.content}
 
 if __name__ == "__main__":
     import uvicorn
