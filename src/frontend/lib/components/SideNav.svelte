@@ -1,6 +1,6 @@
-<script lang="ts">
   import { page } from '$app/stores';
-  import { Home, PlusCircle, ShieldAlert, Settings, Sparkles } from 'lucide-svelte';
+  import { Home, PlusCircle, ShieldAlert, Settings, Sparkles, Mic } from 'lucide-svelte';
+  import { agentState, humeClient, isAgentOpen } from '$lib/stores';
   import { clsx } from 'clsx';
   
   const navItems = [
@@ -8,6 +8,15 @@
     { href: '/log', icon: PlusCircle, label: 'Log' },
     { href: '/active-relief', icon: ShieldAlert, label: 'Relief' }
   ];
+
+  function handleVoiceClick() {
+    if ($agentState === 'disconnected') {
+      humeClient.connect();
+    } else {
+      // Toggle visibility if already connected
+      $isAgentOpen = !$isAgentOpen;
+    }
+  }
 </script>
 
 <aside class="hidden lg:flex flex-col w-64 fixed left-0 top-0 h-screen z-50 overflow-hidden">
@@ -56,6 +65,30 @@
           </span>
         </a>
       {/each}
+      
+      <!-- Desktop Voice Agent Trigger -->
+       <button
+          on:click={handleVoiceClick}
+          class={clsx(
+            "group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 w-full text-left",
+            $agentState !== 'disconnected' 
+              ? "bg-gradient-to-r from-primary/10 to-secondary/10 text-primary border border-primary/20" 
+              : "text-base-content/50 hover:text-base-content hover:bg-base-content/5"
+          )}
+        >
+           <div class={clsx(
+               "relative flex items-center justify-center w-5 h-5 transition-transform",
+                $agentState !== 'disconnected' && "scale-110"
+           )}>
+               {#if $agentState !== 'disconnected'}
+                    <span class="absolute inset-0 rounded-full bg-primary/20 animate-ping"></span>
+               {/if}
+               <Mic size={20} class={clsx($agentState !== 'disconnected' && "text-primary")} />
+           </div>
+          <span class={clsx("font-medium text-sm", $agentState !== 'disconnected' && "font-semibold")}>
+            AI Assistant
+          </span>
+        </button>
     </nav>
     
     <!-- Footer / Settings -->

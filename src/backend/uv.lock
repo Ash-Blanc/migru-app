@@ -84,6 +84,7 @@ dependencies = [
     { name = "hume" },
     { name = "mistralai" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "uvicorn" },
 ]
 
@@ -97,6 +98,7 @@ requires-dist = [
     { name = "hume", specifier = ">=0.13.6" },
     { name = "mistralai", specifier = ">=1.10.1" },
     { name = "pydantic", specifier = ">=2.12.5" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "uvicorn", specifier = ">=0.40.0" },
 ]
 

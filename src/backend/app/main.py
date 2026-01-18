@@ -6,6 +6,10 @@ from app.tools import get_forecast, log_attack, get_status, update_status, get_r
 import os
 import httpx
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Get the FastAPI app from AgentOS
 app = agent_os.get_app()

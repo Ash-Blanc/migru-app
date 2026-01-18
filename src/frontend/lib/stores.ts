@@ -149,14 +149,26 @@ class HumeEVIClient {
 
             console.log("Phase 1: Fetching access token...");
             const res = await fetch('http://localhost:8000/hume/auth', { headers });
-            if (!res.ok) throw new Error(`Auth backend failed: ${res.status}`);
+            
+            if (!res.ok) {
+                 const errText = await res.text();
+                 console.error(`Auth backend failed: ${res.status} - ${errText}`);
+                 throw new Error(`Auth backend failed: ${res.status}`);
+            }
+            
             const data = await res.json();
+            
+            if (data.access_token === "mock_token_for_demo_purposes") {
+                console.warn("⚠️ Using Mock Token! Set HUME_API_KEY/SECRET in .env or Settings.");
+                // We might want to stop here or let it fail downstream if real token needed
+            }
+
             accessToken = data.access_token;
             console.log("✓ Access token received");
         } catch (e) {
             console.error("❌ Token fetch failed:", e);
             agentState.set("error");
-            agentMessage.set("Auth failed. Check backend connection.");
+            agentMessage.set("Auth failed. Check backend connection or keys.");
             return;
         }
 

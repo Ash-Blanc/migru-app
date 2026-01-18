@@ -13,5 +13,6 @@ dependencies = [
     "hume>=0.13.6",
     "mistralai>=1.10.1",
     "pydantic>=2.12.5",
+    "python-dotenv>=1.2.1",
     "uvicorn>=0.40.0",
 ]
