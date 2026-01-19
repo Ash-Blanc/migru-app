@@ -5,6 +5,6 @@ export const prerender = false;
 
 export const load: LayoutServerLoad = async ({ locals }) => {
 	return {
-		...buildClerkProps(locals.auth)
+		...buildClerkProps(locals.auth || {})
 	};
 };
