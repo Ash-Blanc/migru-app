@@ -404,6 +404,25 @@ DATABASE_URL=sqlite:///./migru.db
 
 ## 🚢 **Deployment (Production Ready)**
 
+### **Frontend (Vercel)** ✅ **Fully Configured**
+
+The frontend is **ready for one-click Vercel deployment**:
+- ✅ `@sveltejs/adapter-vercel` installed and configured
+- ✅ `vercel.json` with framework and build settings
+- ✅ `.vercelignore` to exclude backend files
+- ✅ Node.js 20.x runtime specified in package.json
+- ✅ Build tested and passing locally
+
+**Deploy:**
+```bash
+# Option 1: Connect GitHub repo to Vercel (auto-deploys)
+# Option 2: Use Vercel CLI
+npm install -g vercel
+vercel
+```
+
+**Post-deployment:** Update `API_URL` in `lib/stores.ts` to your production backend URL.
+
 ### **Backend (Railway/Render)**
 ```bash
 # Build
@@ -420,14 +439,7 @@ uv run uvicorn app.main_v2:app --host 0.0.0.0 --port $PORT
 - Python: 3.11
 - Build: `uv sync`
 - Start: `uv run uvicorn app.main_v2:app --host 0.0.0.0 --port $PORT`
-
-### **Frontend (Vercel)**
-```bash
-npm run build
-# Deploy .svelte-kit/output
-```
-
-Update `API_URL` in `lib/stores.ts` to production backend URL.
+- Environment variables: Clerk keys, Hume keys, DATABASE_URL
 
 ---
 

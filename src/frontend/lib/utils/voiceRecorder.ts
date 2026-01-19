@@ -102,7 +102,7 @@ export class VoiceRecorder {
         }
 
         this.analyser.getByteFrequencyData(this.dataArray);
-        return this.dataArray;
+        return new Uint8Array(this.dataArray);
     }
 
     /**

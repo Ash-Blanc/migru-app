@@ -1,0 +1,9 @@
+src/backend
+node_modules
+.git
+*.db
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store

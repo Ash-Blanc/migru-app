@@ -233,6 +233,25 @@ curl http://localhost:8000/api/analytics \
 
 ## 🚢 Deployment
 
+### Frontend (Vercel) ✅ Ready
+
+The frontend is **fully configured** for Vercel deployment with:
+- `@sveltejs/adapter-vercel` installed and configured
+- `vercel.json` with framework settings
+- `.vercelignore` to exclude backend files
+- Node.js 20.x runtime specified
+
+**Deploy to Vercel:**
+```bash
+# Connect your GitHub repo to Vercel
+# Vercel will auto-detect SvelteKit and deploy
+# Or use Vercel CLI:
+npm install -g vercel
+vercel
+```
+
+**Important:** Update `API_URL` in `lib/stores.ts` to your production backend URL after deployment.
+
 ### Backend (Railway/Render)
 ```bash
 uv sync
@@ -244,14 +263,7 @@ uv run uvicorn app.main_v2:app --host 0.0.0.0 --port $PORT
 - Python version: 3.11
 - Build command: `uv sync`
 - Start command: `uv run uvicorn app.main_v2:app --host 0.0.0.0 --port $PORT`
-
-### Frontend (Vercel)
-```bash
-npm run build
-# Deploy .svelte-kit/output
-```
-
-Update `API_URL` in `lib/stores.ts` for production.
+- Environment variables: Add Clerk keys, Hume keys, database URL
 
 ---
 
@@ -281,20 +293,21 @@ Update `API_URL` in `lib/stores.ts` for production.
 
 ## 🎯 What's Next
 
-### Priority 1
-- [ ] Web Audio API in onboarding
-- [ ] Real-time waveform visualization
+### Priority 1 (Completed ✅)
+- [x] Web Audio API in onboarding - 30s voice baseline recording
+- [x] Real-time waveform visualization - Frequency-based animation
+- [x] Vercel deployment configuration
 - [ ] TTS for intervention playback
 
 ### Priority 2
-- [ ] Charts for migraine trends
-- [ ] Push notifications
-- [ ] Data export (CSV/PDF)
+- [ ] Charts for migraine trends (visualization library)
+- [ ] Push notifications (Web Push API)
+- [ ] Data export (CSV/PDF generation)
 
 ### Priority 3
-- [ ] Weather API integration
-- [ ] Advanced ML models (ONNX)
-- [ ] Mobile app
+- [ ] Weather API integration (OpenWeather/WeatherAPI)
+- [ ] Advanced ML models (ONNX Runtime)
+- [ ] Mobile app (React Native/Flutter)
 
 ---
 
