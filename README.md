@@ -293,20 +293,21 @@ uv run uvicorn app.main_v2:app --host 0.0.0.0 --port $PORT
 
 ## 🎯 What's Next
 
-### Priority 1
-- [ ] Web Audio API in onboarding
-- [ ] Real-time waveform visualization
+### Priority 1 (Completed ✅)
+- [x] Web Audio API in onboarding - 30s voice baseline recording
+- [x] Real-time waveform visualization - Frequency-based animation
+- [x] Vercel deployment configuration
 - [ ] TTS for intervention playback
 
 ### Priority 2
-- [ ] Charts for migraine trends
-- [ ] Push notifications
-- [ ] Data export (CSV/PDF)
+- [ ] Charts for migraine trends (visualization library)
+- [ ] Push notifications (Web Push API)
+- [ ] Data export (CSV/PDF generation)
 
 ### Priority 3
-- [ ] Weather API integration
-- [ ] Advanced ML models (ONNX)
-- [ ] Mobile app
+- [ ] Weather API integration (OpenWeather/WeatherAPI)
+- [ ] Advanced ML models (ONNX Runtime)
+- [ ] Mobile app (React Native/Flutter)
 
 ---
 
