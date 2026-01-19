@@ -3,10 +3,8 @@
   import { userStatus, riskLevel, logs } from '$lib/stores';
   import { ArrowRight, Calendar, Activity, ClipboardList, Shield, Brain, Sparkles } from 'lucide-svelte';
   import { fly, fade, scale } from 'svelte/transition';
-  import { SignedIn, SignedOut, SignInButton, UserButton, useClerkContext } from 'svelte-clerk';
+  import { SignedIn, SignedOut, SignInButton, UserButton } from 'svelte-clerk';
   
-  const ctx = useClerkContext();
-
   // Dynamic greeting based on time
   const hour = new Date().getHours();
   const greeting = hour < 5 ? "Still up?" : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 21 ? 'Good evening' : "Winding down?";
@@ -46,7 +44,7 @@
         
         <!-- Greeting (H2 instead of oversized text) -->
         <h2 class="mb-2">
-          {greeting}, <span class="gradient-text">{ctx.user?.firstName || 'Friend'}</span>
+          {greeting}, <span class="gradient-text">Friend</span>
         </h2>
         
         <!-- Date pill (Proximity: grouped with greeting) -->
