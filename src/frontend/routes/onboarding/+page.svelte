@@ -1,10 +1,23 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
+	import { VoiceRecorder, isAudioSupported } from '$lib/utils/voiceRecorder';
 
 	let step = 0;
 	let onboardingComplete = false;
+
+	// Voice recording state
+	let recorder: VoiceRecorder | null = null;
+	let isRecording = false;
+	let recordingProgress = 0;
+	let audioLevel = 0;
+	let recordedChunks: Blob[] = [];
+	let recordingTimer: number | null = null;
+	let animationFrame: number | null = null;
+	let recordingComplete = false;
+	const RECORDING_DURATION = 30; // seconds
+	const API_URL = 'http://localhost:8000';
 
 	const steps = [
 		{ title: 'Welcome', component: 'welcome' },
@@ -15,9 +28,10 @@
 
 	onMount(async () => {
 		// Check if already completed
-		const response = await fetch('/api/onboarding/status', {
+		const token = localStorage.getItem('clerk_token') || 'dev_token';
+		const response = await fetch(`${API_URL}/api/onboarding/status`, {
 			headers: {
-				Authorization: `Bearer ${localStorage.getItem('clerk_token')}`
+				Authorization: `Bearer ${token}`
 			}
 		});
 
@@ -28,6 +42,127 @@
 			}
 		}
 	});
+
+	onDestroy(() => {
+		cleanup();
+	});
+
+	function cleanup() {
+		if (recorder) {
+			recorder.cleanup();
+		}
+		if (recordingTimer) {
+			clearInterval(recordingTimer);
+		}
+		if (animationFrame) {
+			cancelAnimationFrame(animationFrame);
+		}
+	}
+
+	async function startRecording() {
+		try {
+			if (!isAudioSupported()) {
+				alert('Your browser does not support audio recording');
+				return;
+			}
+
+			recorder = new VoiceRecorder();
+			await recorder.init();
+			recorder.start();
+
+			isRecording = true;
+			recordingProgress = 0;
+			recordingComplete = false;
+
+			// Progress timer
+			const startTime = Date.now();
+			recordingTimer = window.setInterval(() => {
+				const elapsed = (Date.now() - startTime) / 1000;
+				recordingProgress = Math.min((elapsed / RECORDING_DURATION) * 100, 100);
+
+				if (elapsed >= RECORDING_DURATION) {
+					stopRecording();
+				}
+			}, 100);
+
+			// Visual animation loop
+			function updateVisualization() {
+				if (recorder && isRecording) {
+					audioLevel = recorder.getAudioLevel();
+					animationFrame = requestAnimationFrame(updateVisualization);
+				}
+			}
+			updateVisualization();
+
+		} catch (error) {
+			console.error('Failed to start recording:', error);
+			alert('Could not access microphone. Please grant permission.');
+			isRecording = false;
+		}
+	}
+
+	async function stopRecording() {
+		if (!recorder) return;
+
+		if (recordingTimer) {
+			clearInterval(recordingTimer);
+		}
+		if (animationFrame) {
+			cancelAnimationFrame(animationFrame);
+		}
+
+		isRecording = false;
+		recordingProgress = 100;
+
+		try {
+			const audioBlob = await recorder.stop();
+			recordedChunks.push(audioBlob);
+
+			// Optionally: send to backend for baseline establishment
+			await sendBaselineToBackend([audioBlob]);
+
+			recordingComplete = true;
+			recorder.cleanup();
+
+		} catch (error) {
+			console.error('Failed to stop recording:', error);
+		}
+	}
+
+	async function sendBaselineToBackend(chunks: Blob[]) {
+		try {
+			// Convert blobs to base64
+			const base64Chunks = await Promise.all(
+				chunks.map(async (blob) => {
+					if (recorder) {
+						return await recorder.blobToBase64(blob);
+					}
+					return '';
+				})
+			);
+
+			const token = localStorage.getItem('clerk_token') || 'dev_token';
+			const response = await fetch(`${API_URL}/api/voice/baseline`, {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					audio_chunks: base64Chunks
+				})
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				console.log('✅ Baseline established:', result);
+			} else {
+				console.error('Failed to establish baseline:', response.status);
+			}
+		} catch (error) {
+			console.error('Error sending baseline:', error);
+		}
+	}
 
 	function nextStep() {
 		if (step < steps.length - 1) {
@@ -44,10 +179,11 @@
 	}
 
 	async function completeOnboarding() {
-		const response = await fetch('/api/onboarding/complete', {
+		const token = localStorage.getItem('clerk_token') || 'dev_token';
+		const response = await fetch(`${API_URL}/api/onboarding/complete`, {
 			method: 'POST',
 			headers: {
-				Authorization: `Bearer ${localStorage.getItem('clerk_token')}`
+				Authorization: `Bearer ${token}`
 			}
 		});
 
@@ -152,20 +288,70 @@
 					</div>
 
 					<div class="text-center">
-						<div class="mb-4">
-							<div class="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center animate-pulse">
-								<span class="text-5xl">🎤</span>
+						<div class="mb-4 relative">
+							<div
+								class="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center transition-all duration-300"
+								style="transform: scale({1 + (audioLevel / 255) * 0.3})"
+								class:animate-pulse={!isRecording && !recordingComplete}
+							>
+								<span class="text-5xl">{isRecording ? '🔴' : recordingComplete ? '✅' : '🎤'}</span>
 							</div>
+
+							<!-- Audio Level Visualizer -->
+							{#if isRecording}
+								<div class="mt-4 flex justify-center gap-1">
+									{#each Array(20) as _, i}
+										<div
+											class="w-1 bg-purple-400 rounded-full transition-all duration-100"
+											style="height: {Math.max(4, (audioLevel / 255) * 40 * Math.sin((i + audioLevel) * 0.1))}px"
+										></div>
+									{/each}
+								</div>
+							{/if}
 						</div>
-						<button
-							class="btn btn-primary btn-lg"
-							on:click={() => {
-								// TODO: Implement voice recording
-								alert('Voice baseline recording will be implemented with Web Audio API');
-							}}
-						>
-							Start Recording
-						</button>
+
+						<!-- Progress Bar -->
+						{#if isRecording || recordingComplete}
+							<div class="mb-4">
+								<div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+									<div
+										class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-100"
+										style="width: {recordingProgress}%"
+									></div>
+								</div>
+								<p class="text-sm text-gray-400 mt-2">
+									{Math.floor((recordingProgress / 100) * RECORDING_DURATION)}s / {RECORDING_DURATION}s
+								</p>
+							</div>
+						{/if}
+
+						{#if !isRecording && !recordingComplete}
+							<button
+								class="btn btn-primary btn-lg"
+								on:click={startRecording}
+							>
+								🎤 Start Recording
+							</button>
+						{:else if isRecording}
+							<button
+								class="btn btn-error btn-lg"
+								on:click={stopRecording}
+							>
+								⏹️ Stop Early
+							</button>
+						{:else if recordingComplete}
+							<div class="text-green-400 font-semibold mb-4">
+								✅ Recording complete! Baseline established.
+							</div>
+						{/if}
+
+						{#if !isAudioSupported()}
+							<div class="mt-4 p-4 bg-red-900/30 rounded-xl">
+								<p class="text-red-300 text-sm">
+									⚠️ Your browser does not support audio recording. Please use Chrome, Firefox, or Edge.
+								</p>
+							</div>
+						{/if}
 					</div>
 				</div>
 			{:else if step === 2}
@@ -284,6 +470,7 @@
 				<button
 					class="btn btn-primary"
 					on:click={nextStep}
+					disabled={step === 1 && !recordingComplete}
 				>
 					{step === steps.length - 1 ? 'Complete' : 'Next'} →
 				</button>
