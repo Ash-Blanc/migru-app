@@ -3,6 +3,9 @@
   "private": true,
   "version": "--prod",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -18,6 +21,7 @@
     "@eslint/js": "^9.39.1",
     "@sveltejs/adapter-auto": "^7.0.0",
     "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/adapter-vercel": "^6.3.0",
     "@sveltejs/kit": "^2.49.1",
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
     "@tailwindcss/forms": "^0.5.10",
