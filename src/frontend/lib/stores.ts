@@ -155,8 +155,10 @@ class HumeEVIClient {
         // 1. Initialize AudioContext IMMEDIATELY to capture user gesture
         try {
             const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            this.audioContext = new AudioContextClass({ sampleRate: 24000 });
-            // Resume immediately in case it's suspended, though usually it starts running
+            if (!this.audioContext || this.audioContext.state === 'closed') {
+                this.audioContext = new AudioContextClass({ sampleRate: 24000 });
+            }
+            // Resume immediately in case it's suspended
             if (this.audioContext.state === 'suspended') {
                 await this.audioContext.resume();
             }
@@ -196,7 +198,7 @@ class HumeEVIClient {
         } catch (e) {
             console.error("❌ Token fetch failed:", e);
             agentState.set("error");
-            agentMessage.set("Auth failed.");
+            agentMessage.set("Auth failed. Check API Keys.");
             return;
         }
 
@@ -212,7 +214,8 @@ class HumeEVIClient {
                 
                 onOpen: async () => {
                     console.log("✓ Hume EVI Connected!");
-                    agentState.set("idle");
+                    // Since startAudioSystem enables the mic, we should show listening state
+                    agentState.set("listening"); 
                     isAgentOpen.set(true);
                     agentMessage.set("Connected. Listening...");
                     
@@ -268,8 +271,11 @@ class HumeEVIClient {
                             break;
                         case "error":
                             console.error("EVI Error:", msg);
-                            agentState.set("error");
-                            agentMessage.set(`Error: ${msg.message}`);
+                            // Don't kill session on minor errors, but log them
+                            if (msg.code === 'socket_error' || msg.code === 'connection_error') {
+                                agentState.set("error");
+                                agentMessage.set(`Error: ${msg.message}`);
+                            }
                             break;
                     }
                 },
@@ -295,10 +301,21 @@ class HumeEVIClient {
     
     // --- Audio System (Web Audio API) ---
     private async startAudioSystem() {
-        // Initialize AudioContext
+        // Initialize AudioContext if not already
         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        this.audioContext = new AudioContextClass({ sampleRate: 24000 }); // Match server req
+        if (!this.audioContext || this.audioContext.state === 'closed') {
+             this.audioContext = new AudioContextClass({ sampleRate: 24000 });
+        }
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
+
         this.nextStartTime = this.audioContext.currentTime;
+
+        // Stop existing stream if any
+        if (this.stream) {
+            this.stream.getTracks().forEach(t => t.stop());
+        }
 
         // Get Mic Stream
         this.stream = await navigator.mediaDevices.getUserMedia({ audio: {
@@ -307,13 +324,19 @@ class HumeEVIClient {
             sampleRate: 24000
         }});
 
-        // Create Processing Node (ScriptProcessor is deprecated but reliable for this without Worklet setup)
-        // Buffer size 4096 gives ~170ms latency at 24kHz, 2048 is ~85ms.
+        // Create Processing Node
+        if (this.processor) {
+            this.processor.disconnect();
+        }
+        if (this.source) {
+            this.source.disconnect();
+        }
+
         this.processor = this.audioContext.createScriptProcessor(2048, 1, 1);
         this.source = this.audioContext.createMediaStreamSource(this.stream);
         
         this.source.connect(this.processor);
-        this.processor.connect(this.audioContext.destination); // Needed for processing to happen
+        this.processor.connect(this.audioContext.destination);
 
         this.processor.onaudioprocess = (e) => {
             if (!this.client || this.client.readyState !== 1) return;
@@ -325,10 +348,6 @@ class HumeEVIClient {
             const view = new DataView(buffer);
             for (let i = 0; i < inputData.length; i++) {
                 let s = Math.max(-1, Math.min(1, inputData[i]));
-                // s = s < 0 ? s * 0x8000 : s * 0x7FFF;
-                // view.setInt16(i * 2, s, true); // Little endian
-                
-                // Optimized conversion
                 view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
             }
             
@@ -371,10 +390,7 @@ class HumeEVIClient {
     }
 
     private clearAudioQueue() {
-        // With Web Audio API, cancelling queued nodes is harder without a reference array.
-        // For prototype, we just reset the time logic, new audio will play immediately.
         if (this.audioContext) {
-            // this.audioContext.suspend(); // Too aggressive
             this.nextStartTime = this.audioContext.currentTime;
         }
     }
@@ -383,6 +399,9 @@ class HumeEVIClient {
         this.source?.disconnect();
         this.processor?.disconnect();
         this.stream?.getTracks().forEach(t => t.stop());
+        // Do not close AudioContext immediately if we want to reuse it? 
+        // But if we disconnect, we should probably close it to save resources.
+        // We will re-create it in connect().
         this.audioContext?.close();
         
         this.source = null;
@@ -400,11 +419,17 @@ class HumeEVIClient {
     }
 
     async toggleListening() {
+        // Ensure connected first
+        const currentState = get(agentState);
+        if (!this.client || currentState === 'disconnected' || currentState === 'error') {
+            await this.connect();
+            return;
+        }
+
         if (!this.stream) {
             console.warn("No stream to toggle, attempting to start audio system...");
             try {
                 await this.startAudioSystem();
-                return;
             } catch (e) {
                 console.error("Failed to restart audio:", e);
                 showToast("Microphone error", "error");
@@ -412,7 +437,7 @@ class HumeEVIClient {
             }
         }
         
-        const track = this.stream.getAudioTracks()[0];
+        const track = this.stream?.getAudioTracks()[0];
         if (track) {
             track.enabled = !track.enabled;
             if (track.enabled) {
