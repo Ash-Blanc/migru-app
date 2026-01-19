@@ -86,7 +86,7 @@ export class VoiceRecorder {
             return 0;
         }
 
-        this.analyser.getByteFrequencyData(this.dataArray);
+        this.analyser.getByteFrequencyData(this.dataArray as Uint8Array<ArrayBuffer>);
 
         // Calculate average amplitude
         const average = this.dataArray.reduce((sum, value) => sum + value, 0) / this.dataArray.length;
@@ -101,8 +101,8 @@ export class VoiceRecorder {
             return new Uint8Array(0);
         }
 
-        this.analyser.getByteFrequencyData(this.dataArray);
-        return new Uint8Array(this.dataArray);
+        this.analyser.getByteFrequencyData(this.dataArray as Uint8Array<ArrayBuffer>);
+        return this.dataArray.slice();
     }
 
     /**
@@ -163,10 +163,12 @@ export class VoiceRecorder {
  * Check if browser supports required audio features
  */
 export function isAudioSupported(): boolean {
-    return !!(
-        navigator.mediaDevices &&
-        navigator.mediaDevices.getUserMedia &&
-        window.AudioContext
+    return (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.mediaDevices !== 'undefined' &&
+        typeof navigator.mediaDevices.getUserMedia === 'function' &&
+        typeof window !== 'undefined' &&
+        typeof window.AudioContext !== 'undefined'
     );
 }
 

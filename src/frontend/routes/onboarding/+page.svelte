@@ -216,7 +216,7 @@
 						class="flex-1 h-1 mx-2 mb-8 rounded transition-all duration-300"
 						class:bg-purple-500={i < step}
 						class:bg-gray-700={i >= step}
-					/>
+					></div>
 				{/if}
 			{/each}
 		</div>
@@ -364,10 +364,10 @@
 
 					<div class="space-y-4">
 						<div>
-							<label class="block text-sm font-medium text-gray-300 mb-2">
+							<label for="migraine-frequency" class="block text-sm font-medium text-gray-300 mb-2">
 								How often do you experience migraines?
 							</label>
-							<select class="select select-bordered w-full">
+							<select id="migraine-frequency" class="select select-bordered w-full">
 								<option>Rarely (less than 1/month)</option>
 								<option>Occasionally (1-3/month)</option>
 								<option>Frequently (4-8/month)</option>
@@ -375,10 +375,10 @@
 							</select>
 						</div>
 
-						<div>
-							<label class="block text-sm font-medium text-gray-300 mb-2">
+						<fieldset>
+							<legend class="block text-sm font-medium text-gray-300 mb-2">
 								Common triggers (select all that apply)
-							</label>
+							</legend>
 							<div class="grid grid-cols-2 gap-2">
 								{#each ['Stress', 'Poor sleep', 'Dehydration', 'Skipped meals', 'Bright lights', 'Weather changes', 'Caffeine', 'Alcohol'] as trigger}
 									<label class="flex items-center gap-2 cursor-pointer">
@@ -387,12 +387,12 @@
 									</label>
 								{/each}
 							</div>
-						</div>
+						</fieldset>
 
-						<div>
-							<label class="block text-sm font-medium text-gray-300 mb-2">
+						<fieldset>
+							<legend class="block text-sm font-medium text-gray-300 mb-2">
 								Most common symptoms (select all that apply)
-							</label>
+							</legend>
 							<div class="grid grid-cols-2 gap-2">
 								{#each ['Throbbing pain', 'Nausea', 'Light sensitivity', 'Sound sensitivity', 'Aura', 'Brain fog', 'Neck pain', 'Dizziness'] as symptom}
 									<label class="flex items-center gap-2 cursor-pointer">
@@ -401,7 +401,7 @@
 									</label>
 								{/each}
 							</div>
-						</div>
+						</fieldset>
 					</div>
 				</div>
 			{:else if step === 3}

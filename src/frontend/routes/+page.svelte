@@ -30,8 +30,8 @@
   </div>
 </ClerkLoading>
 
-<ClerkLoaded let:auth>
-  {#if auth?.userId || $page.data.auth?.userId || $page.data.userId}
+<ClerkLoaded>
+  {#if $page.data.auth?.userId || $page.data.userId}
     <!-- Dashboard -->
     <div class="space-y-12">
       <div 
@@ -157,7 +157,7 @@
           </p>
 
           <div class="pt-4">
-              <SignInButton mode="modal" forcedRedirectUrl="/">
+              <SignInButton mode="modal" forceRedirectUrl="/">
                   <button class="btn btn-primary btn-lg rounded-full shadow-lg shadow-primary/25 hover:shadow-primary/40 px-8 gap-2 group">
                       Get Started
                       <ArrowRight size={20} class="group-hover:translate-x-1 transition-transform" />

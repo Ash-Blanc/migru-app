@@ -12,7 +12,8 @@
 			weekly_voice_checkins: 0,
 			total_voice_sessions: 0,
 			current_streak: 0,
-			longest_streak: 0
+			longest_streak: 0,
+			last_checkin: null as string | null
 		},
 		health_outcomes: {
 			baseline_attack_frequency: null,
@@ -215,15 +216,15 @@
 							<div class="pt-4 border-t border-gray-700">
 								<div class="flex items-center gap-2 mb-2">
 									<span class="text-2xl">
-										{analytics.health_outcomes.migraine_reduction_percentage > 0 ? '📉' : '📊'}
+										{(analytics.health_outcomes.migraine_reduction_percentage ?? 0) > 0 ? '📉' : '📊'}
 									</span>
 									<span class="text-lg font-semibold text-white">
-										{analytics.health_outcomes.migraine_reduction_percentage > 0 ? 'Improving!' : 'Tracking...'}
+										{(analytics.health_outcomes.migraine_reduction_percentage ?? 0) > 0 ? 'Improving!' : 'Tracking...'}
 									</span>
 								</div>
 								<p class="text-sm text-gray-400">
-									{analytics.health_outcomes.migraine_reduction_percentage > 0
-										? `You've reduced migraine frequency by ${Math.round(analytics.health_outcomes.migraine_reduction_percentage)}%`
+									{(analytics.health_outcomes.migraine_reduction_percentage ?? 0) > 0
+										? `You've reduced migraine frequency by ${Math.round(analytics.health_outcomes.migraine_reduction_percentage ?? 0)}%`
 										: 'Keep tracking to see your progress'}
 								</p>
 							</div>
@@ -254,7 +255,7 @@
 						</div>
 					{/if}
 
-					{#if analytics.health_outcomes.migraine_reduction_percentage >= 40}
+					{#if (analytics.health_outcomes.migraine_reduction_percentage ?? 0) >= 40}
 						<div class="p-3 bg-purple-900/30 rounded-lg border border-purple-700">
 							<p class="text-purple-300 text-sm">
 								🎉 Amazing! You've achieved the 40% reduction goal. Keep up your routine to maintain these results.

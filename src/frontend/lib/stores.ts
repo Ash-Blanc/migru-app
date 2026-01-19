@@ -1,9 +1,5 @@
 import { writable, get } from 'svelte/store';
-import {
-    VoiceClient,
-    getAudioStream,
-    getSupportedMimeType
-} from '@humeai/voice';
+import { VoiceClient } from '@humeai/voice';
 
 // V2 API Configuration
 const API_URL = 'http://localhost:8000';
@@ -184,7 +180,7 @@ class HumeEVIClient {
         // 3. Get Auth Token
         let accessToken = '';
         const configId = get(apiKeys.humeConfigId);
-        
+
         try {
             const hKey = get(apiKeys.humeKey);
             const hSecret = get(apiKeys.humeSecret);
@@ -212,14 +208,14 @@ class HumeEVIClient {
                 hostname: 'api.hume.ai',
                 auth: { type: 'accessToken', value: accessToken },
                 configId: configId || undefined,
-                
+
                 onOpen: async () => {
                     console.log("✓ Hume EVI Connected!");
                     // Since startAudioSystem enables the mic, we should show listening state
-                    agentState.set("listening"); 
+                    agentState.set("listening");
                     isAgentOpen.set(true);
                     agentMessage.set("Connected. Listening...");
-                    
+
                     // Configure Session
                     // @ts-ignore
                     const settings = {
@@ -299,13 +295,13 @@ class HumeEVIClient {
             agentMessage.set(`SDK error: ${(e as Error).message}`);
         }
     }
-    
+
     // --- Audio System (Web Audio API) ---
     private async startAudioSystem() {
         // Initialize AudioContext if not already
         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
         if (!this.audioContext || this.audioContext.state === 'closed') {
-             this.audioContext = new AudioContextClass({ sampleRate: 24000 });
+            this.audioContext = new AudioContextClass({ sampleRate: 24000 });
         }
         if (this.audioContext.state === 'suspended') {
             await this.audioContext.resume();
@@ -319,11 +315,13 @@ class HumeEVIClient {
         }
 
         // Get Mic Stream
-        this.stream = await navigator.mediaDevices.getUserMedia({ audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            sampleRate: 24000
-        }});
+        this.stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 24000
+            }
+        });
 
         // Create Processing Node
         if (this.processor) {
@@ -335,15 +333,15 @@ class HumeEVIClient {
 
         this.processor = this.audioContext.createScriptProcessor(2048, 1, 1);
         this.source = this.audioContext.createMediaStreamSource(this.stream);
-        
+
         this.source.connect(this.processor);
         this.processor.connect(this.audioContext.destination);
 
         this.processor.onaudioprocess = (e) => {
             if (!this.client || this.client.readyState !== 1) return;
-            
+
             const inputData = e.inputBuffer.getChannelData(0);
-            
+
             // Convert Float32 to Int16 (Linear16 PCM)
             const buffer = new ArrayBuffer(inputData.length * 2);
             const view = new DataView(buffer);
@@ -351,11 +349,11 @@ class HumeEVIClient {
                 let s = Math.max(-1, Math.min(1, inputData[i]));
                 view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
             }
-            
+
             // Send to Hume
             this.client.sendAudio(buffer);
         };
-        
+
         console.log("✓ Audio System Started (PCM 24kHz)");
     }
 
@@ -367,11 +365,11 @@ class HumeEVIClient {
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
         for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-        
+
         // Create Buffer (Assuming Linear16 from server as requested)
         const int16 = new Int16Array(bytes.buffer);
         const float32 = new Float32Array(int16.length);
-        
+
         for (let i = 0; i < int16.length; i++) {
             float32[i] = int16[i] / 32768.0;
         }
@@ -383,7 +381,7 @@ class HumeEVIClient {
         const source = this.audioContext.createBufferSource();
         source.buffer = buffer;
         source.connect(this.audioContext.destination);
-        
+
         // Schedule for gapless playback
         const startTime = Math.max(this.audioContext.currentTime, this.nextStartTime);
         source.start(startTime);
@@ -404,7 +402,7 @@ class HumeEVIClient {
         // But if we disconnect, we should probably close it to save resources.
         // We will re-create it in connect().
         this.audioContext?.close();
-        
+
         this.source = null;
         this.processor = null;
         this.stream = null;
@@ -437,7 +435,7 @@ class HumeEVIClient {
                 return;
             }
         }
-        
+
         const track = this.stream?.getAudioTracks()[0];
         if (track) {
             track.enabled = !track.enabled;
@@ -457,7 +455,7 @@ class HumeEVIClient {
         try {
             let args = message.parameters;
             if (typeof args === 'string') {
-                 try { args = JSON.parse(args); } catch (e) {}
+                try { args = JSON.parse(args); } catch (e) { }
             }
 
             const res = await fetch(`${getBackendUrl()}/hume/tool-call`, {
@@ -469,9 +467,9 @@ class HumeEVIClient {
                 })
             });
             const data = await res.json();
-            
+
             if (message.name === 'log_attack' || message.name === 'update_status') {
-                 syncWithBackend();
+                syncWithBackend();
             }
 
             this.client?.sendToolMessage({
