@@ -233,6 +233,25 @@ curl http://localhost:8000/api/analytics \
 
 ## 🚢 Deployment
 
+### Frontend (Vercel) ✅ Ready
+
+The frontend is **fully configured** for Vercel deployment with:
+- `@sveltejs/adapter-vercel` installed and configured
+- `vercel.json` with framework settings
+- `.vercelignore` to exclude backend files
+- Node.js 20.x runtime specified
+
+**Deploy to Vercel:**
+```bash
+# Connect your GitHub repo to Vercel
+# Vercel will auto-detect SvelteKit and deploy
+# Or use Vercel CLI:
+npm install -g vercel
+vercel
+```
+
+**Important:** Update `API_URL` in `lib/stores.ts` to your production backend URL after deployment.
+
 ### Backend (Railway/Render)
 ```bash
 uv sync
@@ -244,14 +263,7 @@ uv run uvicorn app.main_v2:app --host 0.0.0.0 --port $PORT
 - Python version: 3.11
 - Build command: `uv sync`
 - Start command: `uv run uvicorn app.main_v2:app --host 0.0.0.0 --port $PORT`
-
-### Frontend (Vercel)
-```bash
-npm run build
-# Deploy .svelte-kit/output
-```
-
-Update `API_URL` in `lib/stores.ts` for production.
+- Environment variables: Add Clerk keys, Hume keys, database URL
 
 ---
 
