@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { Menu, User } from 'lucide-svelte';
-  let menuOpen = false;
-  const toggleMenu = () => (menuOpen = !menuOpen);
+  import { SignedIn, SignedOut, UserButton, SignInButton } from 'svelte-clerk';
 </script>
 
 <header class="navbar sticky top-0 z-40 px-4 py-2 min-h-[3.5rem]">
@@ -28,29 +26,13 @@
   </div>
   
   <div class="relative flex-none">
-    <button 
-      class="btn btn-ghost btn-circle btn-sm" 
-      on:click={toggleMenu} 
-      aria-label="Menu"
-    >
-      <Menu size={20} class="opacity-60" />
-    </button>
-    
-    {#if menuOpen}
-      <ul class="absolute right-0 top-full mt-2 z-50 p-2 shadow-xl rounded-2xl w-44 bg-base-100/95 backdrop-blur-xl border border-base-content/5">
-        <li>
-          <a href="/settings" class="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-base-content/5 transition-colors">
-            <User size={16} class="opacity-50" />
-            <span class="text-sm font-medium">Settings</span>
-          </a>
-        </li>
-        <li class="my-1 h-px bg-base-content/5"></li>
-        <li>
-          <button class="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-left text-error hover:bg-error/5 transition-colors">
-            <span class="text-sm font-medium">Sign Out</span>
-          </button>
-        </li>
-      </ul>
-    {/if}
+    <SignedOut>
+      <SignInButton mode="modal">
+        <button class="btn btn-sm btn-ghost">Sign In</button>
+      </SignInButton>
+    </SignedOut>
+    <SignedIn>
+      <UserButton afterSignOutUrl="/" />
+    </SignedIn>
   </div>
 </header>

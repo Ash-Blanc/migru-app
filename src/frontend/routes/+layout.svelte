@@ -5,8 +5,12 @@
     import TopAppBar from "$lib/components/TopAppBar.svelte";
     import VoiceAgent from "$lib/components/VoiceAgent.svelte";
     import Toast from "$lib/components/Toast.svelte";
+    import { ClerkProvider } from 'svelte-clerk';
+
+    export let data;
 </script>
 
+<ClerkProvider {...data}>
 <div class="min-h-screen flex flex-col lg:flex-row font-sans text-base-content selection:bg-primary/30 selection:text-primary-content">
     <!-- Ambient Background -->
     <div class="ambient-bg"></div>
@@ -32,3 +36,4 @@
         <BottomNav />
     </div>
 </div>
+</ClerkProvider>
