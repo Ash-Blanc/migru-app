@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: migru-backend
+    runtime: python
+    pythonVersion: 3.11
+    buildCommand: >
+      cd src/backend &&
+      pip install --no-cache-dir uv &&
+      uv pip install --system --no-cache -r pyproject.toml || uv sync --system --no-dev
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    workingDirectory: src/backend
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHONUNBUFFERED
+        value: 1
+    autoDeploy: true
+    branch: main
+    plan: free
