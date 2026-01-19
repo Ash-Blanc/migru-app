@@ -6,14 +6,23 @@
     import VoiceAgent from "$lib/components/VoiceAgent.svelte";
     import Toast from "$lib/components/Toast.svelte";
     import { ClerkProvider } from 'svelte-clerk';
+    import { PUBLIC_CLERK_PUBLISHABLE_KEY } from '$env/static/public';
 
     export let data;
+
+    if (typeof window !== 'undefined') {
+        console.log("Migru: Initializing with key present:", !!PUBLIC_CLERK_PUBLISHABLE_KEY);
+        console.log("Migru: Layout data:", data);
+    }
 </script>
 
-<ClerkProvider {...data}>
+<!-- Ambient Background (Always render) -->
+<div class="ambient-bg"></div>
+
+<div class="sr-only">Migru Layout Rendering</div>
+
+<ClerkProvider {...data} publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY}>
 <div class="min-h-screen flex flex-col lg:flex-row font-sans text-base-content selection:bg-primary/30 selection:text-primary-content">
-    <!-- Ambient Background -->
-    <div class="ambient-bg"></div>
     
     <!-- Desktop Sidebar (only on lg screens 1024px+) -->
     <SideNav />

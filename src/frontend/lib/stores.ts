@@ -65,13 +65,7 @@ export const logs = createPersistentStore<any[]>("migru_logs", []);
 
 // --- Configuration ---
 const getBackendUrl = () => {
-    if (typeof window === 'undefined') return 'http://localhost:8000';
-    // If running on localhost, assume backend is on 8000.
-    // If running on a network IP (e.g. 192.168.x.x), assume backend is on same IP port 8000.
-    // In production, this might need to be '/api' if behind a proxy.
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    return `${protocol}//${hostname}:8000`;
+    return 'http://localhost:8000';
 };
 
 // --- Data Fetching (Sync with Backend) ---
