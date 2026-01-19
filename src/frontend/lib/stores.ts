@@ -1,6 +1,8 @@
 import { writable, get } from 'svelte/store';
 import {
-    VoiceClient
+    VoiceClient,
+    getAudioStream,
+    getSupportedMimeType
 } from '@humeai/voice';
 
 // Type definitions (approximate, since exports are missing in current version)
@@ -61,11 +63,22 @@ export const userTheme = createPersistentStore<string>("migru_theme", "light");
 export const notificationsEnabled = createPersistentStore<boolean>("migru_notifications", true);
 export const logs = createPersistentStore<any[]>("migru_logs", []);
 
+// --- Configuration ---
+const getBackendUrl = () => {
+    if (typeof window === 'undefined') return 'http://localhost:8000';
+    // If running on localhost, assume backend is on 8000.
+    // If running on a network IP (e.g. 192.168.x.x), assume backend is on same IP port 8000.
+    // In production, this might need to be '/api' if behind a proxy.
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    return `${protocol}//${hostname}:8000`;
+};
+
 // --- Data Fetching (Sync with Backend) ---
 export const syncWithBackend = async () => {
     try {
         console.log("Syncing with backend...");
-        const res = await fetch('http://localhost:8000/api/status');
+        const res = await fetch(`${getBackendUrl()}/api/status`);
         if (res.ok) {
             const data = await res.json();
             userStatus.set(data.status);
@@ -123,6 +136,11 @@ export const showToast = (message: string, type: 'success' | 'error' | 'info' = 
 // --- Hume EVI Client (SDK v0.1.x) ---
 class HumeEVIClient {
     private client: VoiceClient | null = null;
+    private audioContext: AudioContext | null = null;
+    private stream: MediaStream | null = null;
+    private processor: ScriptProcessorNode | null = null;
+    private source: MediaStreamAudioSourceNode | null = null;
+    private nextStartTime = 0;
 
     async connect() {
         if (this.client) {
@@ -132,21 +150,29 @@ class HumeEVIClient {
         }
 
         console.log("--- Initializing Hume EVI ---");
+        showToast("Connecting...", "info");
 
-        // 1. Check for Secure Context (Required for Mic)
-        if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost') {
-            console.error("❌ NOT A SECURE CONTEXT! Microphone access will be blocked.");
-            console.warn("Please use http://localhost:5173 or HTTPS if using an IP/Domain.");
+        // 1. Initialize AudioContext IMMEDIATELY to capture user gesture
+        try {
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            this.audioContext = new AudioContextClass({ sampleRate: 24000 });
+            // Resume immediately in case it's suspended, though usually it starts running
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
+            console.log("✓ AudioContext Initialized");
+        } catch (e) {
+            console.error("AudioContext Init Failed:", e);
             agentState.set("error");
-            agentMessage.set("Security error: Use localhost or HTTPS for voice chat.");
+            agentMessage.set("Audio error: Click to retry.");
             return;
         }
 
-        // 2. Check for MediaDevices
-        if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            console.error("❌ MediaDevices / getUserMedia not supported in this browser.");
+        // 2. Check for Secure Context
+        if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost') {
+            console.error("❌ NOT A SECURE CONTEXT!");
             agentState.set("error");
-            agentMessage.set("Voice chat not supported on this browser.");
+            agentMessage.set("Security error: Use localhost or HTTPS.");
             return;
         }
 
@@ -163,28 +189,14 @@ class HumeEVIClient {
             if (hKey) headers['x-hume-api-key'] = hKey;
             if (hSecret) headers['x-hume-secret-key'] = hSecret;
 
-            console.log("Phase 1: Fetching access token...");
-            const res = await fetch('http://localhost:8000/hume/auth', { headers });
-            
-            if (!res.ok) {
-                 const errText = await res.text();
-                 console.error(`Auth backend failed: ${res.status} - ${errText}`);
-                 throw new Error(`Auth backend failed: ${res.status}`);
-            }
-            
+            const res = await fetch(`${getBackendUrl()}/hume/auth`, { headers });
+            if (!res.ok) throw new Error(`Auth failed: ${res.status}`);
             const data = await res.json();
-            
-            if (data.access_token === "mock_token_for_demo_purposes") {
-                console.warn("⚠️ Using Mock Token! Set HUME_API_KEY/SECRET in .env or Settings.");
-                // We might want to stop here or let it fail downstream if real token needed
-            }
-
             accessToken = data.access_token;
-            console.log("✓ Access token received");
         } catch (e) {
             console.error("❌ Token fetch failed:", e);
             agentState.set("error");
-            agentMessage.set("Auth failed. Check backend connection or keys.");
+            agentMessage.set("Auth failed.");
             return;
         }
 
@@ -192,28 +204,46 @@ class HumeEVIClient {
         try {
             console.log("Phase 2: Connecting to Hume EVI WebSocket...");
 
-            // Use VoiceClient.create() if constructor is private, or assume it's publicly constructible if docs say so.
-            // Since svelte-check says constructor is private, we should look for a static factory method.
-            // However, based on the package usage, it is often new VoiceClient({...}).
-            // If the type definition in node_modules says private, we might need to cast or suppress.
-            
-            // @ts-ignore - The constructor is marked private in some type defs but is the way to init in 0.1.x
+            // @ts-ignore
             this.client = new VoiceClient({
                 hostname: 'api.hume.ai',
                 auth: { type: 'accessToken', value: accessToken },
-                configId: configId || undefined, // Use Config ID if provided
-
-                onOpen: () => {
+                configId: configId || undefined,
+                
+                onOpen: async () => {
                     console.log("✓ Hume EVI Connected!");
                     agentState.set("idle");
                     isAgentOpen.set(true);
-                    agentMessage.set("Connected and ready!");
+                    agentMessage.set("Connected. Listening...");
+                    
+                    // Configure Session
+                    // @ts-ignore
+                    const settings = {
+                        audio: {
+                            channels: 1,
+                            encoding: 'linear16',
+                            sampleRate: 24000
+                        }
+                    };
+                    // @ts-ignore
+                    if (this.client.sendSessionSettings) {
+                        // @ts-ignore
+                        this.client.sendSessionSettings(settings);
+                    }
+
+                    // Start Audio I/O (using the pre-initialized context)
+                    try {
+                        await this.startAudioSystem();
+                    } catch (err) {
+                        console.error("Audio Start Error:", err);
+                        agentState.set("error");
+                        agentMessage.set("Microphone error.");
+                        showToast("Microphone access denied", "error");
+                    }
                 },
 
                 onMessage: (msg: any) => {
                     if (!msg) return;
-                    // console.log("Hume message:", msg.type); // Less noise
-
                     switch (msg.type) {
                         case "user_message":
                             if (msg.message?.content) userTranscript.set(msg.message.content);
@@ -227,72 +257,184 @@ class HumeEVIClient {
                             break;
                         case "audio_output":
                             agentState.set("speaking");
+                            this.playPCM(msg.data);
                             break;
                         case "user_interruption":
                             agentState.set("listening");
+                            this.clearAudioQueue();
                             break;
                         case "tool_call":
                             this.handleToolCall(msg);
                             break;
                         case "error":
-                            console.error("EVI Server Error:", msg.message);
+                            console.error("EVI Error:", msg);
                             agentState.set("error");
                             agentMessage.set(`Error: ${msg.message}`);
                             break;
                     }
                 },
-
                 onError: (err: any) => {
-                    console.error("❌ WebSocket Error:", err);
+                    console.error("Socket Error:", err);
                     agentState.set("error");
-                    agentMessage.set("Connection lost. Retrying...");
+                    agentMessage.set("Connection error.");
                 },
-
                 onClose: () => {
-                    console.log("EVI Connection CLOSED");
-                    this.client = null;
+                    this.cleanup();
                     agentState.set("disconnected");
                 }
             });
 
-            console.log("Phase 3: Handshaking...");
             this.client?.connect();
 
         } catch (e) {
-            console.error("❌ SDK Initialization failed:", e);
+            console.error("SDK Init Error:", e);
             agentState.set("error");
             agentMessage.set(`SDK error: ${(e as Error).message}`);
         }
     }
+    
+    // --- Audio System (Web Audio API) ---
+    private async startAudioSystem() {
+        // Initialize AudioContext
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        this.audioContext = new AudioContextClass({ sampleRate: 24000 }); // Match server req
+        this.nextStartTime = this.audioContext.currentTime;
+
+        // Get Mic Stream
+        this.stream = await navigator.mediaDevices.getUserMedia({ audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            sampleRate: 24000
+        }});
+
+        // Create Processing Node (ScriptProcessor is deprecated but reliable for this without Worklet setup)
+        // Buffer size 4096 gives ~170ms latency at 24kHz, 2048 is ~85ms.
+        this.processor = this.audioContext.createScriptProcessor(2048, 1, 1);
+        this.source = this.audioContext.createMediaStreamSource(this.stream);
+        
+        this.source.connect(this.processor);
+        this.processor.connect(this.audioContext.destination); // Needed for processing to happen
+
+        this.processor.onaudioprocess = (e) => {
+            if (!this.client || this.client.readyState !== 1) return;
+            
+            const inputData = e.inputBuffer.getChannelData(0);
+            
+            // Convert Float32 to Int16 (Linear16 PCM)
+            const buffer = new ArrayBuffer(inputData.length * 2);
+            const view = new DataView(buffer);
+            for (let i = 0; i < inputData.length; i++) {
+                let s = Math.max(-1, Math.min(1, inputData[i]));
+                // s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                // view.setInt16(i * 2, s, true); // Little endian
+                
+                // Optimized conversion
+                view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+            
+            // Send to Hume
+            this.client.sendAudio(buffer);
+        };
+        
+        console.log("✓ Audio System Started (PCM 24kHz)");
+    }
+
+    private playPCM(base64Data: string) {
+        if (!this.audioContext) return;
+
+        // Decode Base64
+        const binaryString = window.atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+        
+        // Create Buffer (Assuming Linear16 from server as requested)
+        const int16 = new Int16Array(bytes.buffer);
+        const float32 = new Float32Array(int16.length);
+        
+        for (let i = 0; i < int16.length; i++) {
+            float32[i] = int16[i] / 32768.0;
+        }
+
+        const buffer = this.audioContext.createBuffer(1, float32.length, 24000);
+        buffer.getChannelData(0).set(float32);
+
+        // Play
+        const source = this.audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.audioContext.destination);
+        
+        // Schedule for gapless playback
+        const startTime = Math.max(this.audioContext.currentTime, this.nextStartTime);
+        source.start(startTime);
+        this.nextStartTime = startTime + buffer.duration;
+    }
+
+    private clearAudioQueue() {
+        // With Web Audio API, cancelling queued nodes is harder without a reference array.
+        // For prototype, we just reset the time logic, new audio will play immediately.
+        if (this.audioContext) {
+            // this.audioContext.suspend(); // Too aggressive
+            this.nextStartTime = this.audioContext.currentTime;
+        }
+    }
+
+    private cleanup() {
+        this.source?.disconnect();
+        this.processor?.disconnect();
+        this.stream?.getTracks().forEach(t => t.stop());
+        this.audioContext?.close();
+        
+        this.source = null;
+        this.processor = null;
+        this.stream = null;
+        this.audioContext = null;
+        this.client = null;
+    }
 
     disconnect() {
-        if (this.client) {
-            this.client.disconnect();
-            this.client = null;
-        }
+        this.client?.disconnect();
+        this.cleanup();
         agentState.set("disconnected");
         isAgentOpen.set(false);
     }
 
-    toggleListening() {
-        console.log("toggleListening called - SDK handles VAD automatically.");
+    async toggleListening() {
+        if (!this.stream) {
+            console.warn("No stream to toggle, attempting to start audio system...");
+            try {
+                await this.startAudioSystem();
+                return;
+            } catch (e) {
+                console.error("Failed to restart audio:", e);
+                showToast("Microphone error", "error");
+                return;
+            }
+        }
+        
+        const track = this.stream.getAudioTracks()[0];
+        if (track) {
+            track.enabled = !track.enabled;
+            if (track.enabled) {
+                agentState.set("listening");
+                showToast("Unmuted", "success");
+            } else {
+                agentState.set("idle");
+                showToast("Muted", "info");
+            }
+        }
     }
 
     private async handleToolCall(message: ToolCallMessage) {
         agentState.set("processing");
         console.log("Tool execution:", message.name);
         try {
-            // Need to parse parameters if they are a JSON string, or use directly if object
             let args = message.parameters;
             if (typeof args === 'string') {
-                 try {
-                     args = JSON.parse(args);
-                 } catch (e) {
-                     console.warn("Could not parse tool params, using as is:", args);
-                 }
+                 try { args = JSON.parse(args); } catch (e) {}
             }
 
-            const res = await fetch('http://localhost:8000/hume/tool-call', {
+            const res = await fetch(`${getBackendUrl()}/hume/tool-call`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -302,7 +444,6 @@ class HumeEVIClient {
             });
             const data = await res.json();
             
-            // Sync frontend state immediately if status changed
             if (message.name === 'log_attack' || message.name === 'update_status') {
                  syncWithBackend();
             }
