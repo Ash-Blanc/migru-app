@@ -5,6 +5,9 @@ import {
     getSupportedMimeType
 } from '@humeai/voice';
 
+// V2 API Configuration
+const API_URL = 'http://localhost:8000';
+
 // Type definitions (approximate, since exports are missing in current version)
 interface ToolCallMessage {
     type: 'tool_call';
@@ -71,15 +74,19 @@ const getBackendUrl = () => {
 // --- Data Fetching (Sync with Backend) ---
 export const syncWithBackend = async () => {
     try {
-        console.log("Syncing with backend...");
-        const res = await fetch(`${getBackendUrl()}/api/status`);
+        console.log("Syncing with V2 backend...");
+        const token = typeof localStorage !== 'undefined' ? localStorage.getItem('clerk_token') || 'dev_token' : 'dev_token';
+        const res = await fetch(`${API_URL}/api/status`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         if (res.ok) {
             const data = await res.json();
             userStatus.set(data.status);
             riskLevel.set(data.risk_level);
             hrv.set(data.hrv);
-            logs.set(data.logs);
-            console.log("Synced:", data);
+            console.log("✅ Synced V2:", data);
         } else {
             console.error("Sync failed:", res.status);
         }

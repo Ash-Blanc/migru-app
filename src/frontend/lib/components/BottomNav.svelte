@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Home, PlusCircle, ShieldAlert, Settings, Zap } from 'lucide-svelte';
+  import { Home, PlusCircle, ShieldAlert, Settings, BarChart3 } from 'lucide-svelte';
   import { page } from '$app/stores';
   import { agentState, humeClient, isAgentOpen } from '$lib/stores';
   import { clsx } from 'clsx';
@@ -91,22 +91,22 @@
     </button>
 
     <!-- Right Group -->
-    <a 
-      href="/active-relief" 
+    <a
+      href="/analytics"
       class={clsx(
         "relative flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-2xl transition-all duration-300",
-        $page.url.pathname === '/active-relief' ? "text-primary" : "text-base-content/40 hover:text-base-content/70 active:scale-95"
+        $page.url.pathname === '/analytics' ? "text-primary" : "text-base-content/40 hover:text-base-content/70 active:scale-95"
       )}
     >
-      {#if $page.url.pathname === '/active-relief'}
+      {#if $page.url.pathname === '/analytics'}
         <div class="absolute -top-1 w-1 rounded-full bg-primary h-1" transition:scale={{ duration: 200 }}></div>
       {/if}
-      <ShieldAlert size={22} strokeWidth={$page.url.pathname === '/active-relief' ? 2.5 : 2} />
-      <span class={clsx("text-[10px]", $page.url.pathname === '/active-relief' && "font-semibold")}>Relief</span>
+      <BarChart3 size={22} strokeWidth={$page.url.pathname === '/analytics' ? 2.5 : 2} />
+      <span class={clsx("text-[10px]", $page.url.pathname === '/analytics' && "font-semibold")}>Analytics</span>
     </a>
 
-    <a 
-      href="/settings" 
+    <a
+      href="/settings"
       class={clsx(
         "relative flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-2xl transition-all duration-300",
         $page.url.pathname === '/settings' ? "text-primary" : "text-base-content/40 hover:text-base-content/70 active:scale-95"
